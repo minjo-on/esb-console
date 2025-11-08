@@ -1,0 +1,15 @@
+<beans>
+#foreach( $jmslistener in $data )
+	<bean id="$jmslistener.jmsListenerId" class="$jmslistener.jmsListenerClazz">
+        <description><![CDATA[$jmslistener.description]]></description>
+        <property name="concurrentConsumers" value="$jmslistener.concurrentConsumers"/>
+        <property name="connectionFactory" ref="$jmslistener.jlConnectionFactoryId"/>
+        <property name="destinationName" value="$jmslistener.destinationName"/>
+        <property name="messageListener" ref="$jmslistener.messageListener"/>
+        <property name="messageSelector" value="$jmslistener.messageSelector"/>
+        <property name="sessionTransacted" value="$jmslistener.sessionTransacted"/>
+        <property name="receiveTimeout" value="$jmslistener.receiveTimeout"/>
+        <property name="pubSubDomain" value="$jmslistener.pubSubDomain"/>
+    </bean>
+#end
+</beans>

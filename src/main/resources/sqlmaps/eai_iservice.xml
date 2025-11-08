@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_iservice">
+
+	<typeAlias alias="iservice" type="com.indigo.web.agent.vo.EaiIServiceVO"/>
+	
+	<resultMap id="iservice_file_map" class="com.indigo.web.agent.vo.EaiIServiceVO">
+	    <result property="is_id"        column="IS_ID" jdbcType="VARCHAR" />
+	    <result property="is_ver"       column="IS_VER" jdbcType="VARCHAR" />
+	    <result property="is_reg_user"  column="IS_REG_USER" jdbcType="VARCHAR" />
+	    <result property="is_reg_date"  column="IS_REG_DATE" jdbcType="DATE" />
+	    <result property="is_file_size" column="IS_FILE_SIZE" jdbcType="VARCHAR" />
+	    <result property="is_file"      column="IS_FILE" jdbcType="BLOB" />
+	</resultMap>
+	
+	<sql id="iservice_table">esb_ISERVICE</sql>
+	<sql id="iservice_ver_table">esb_ISERVICE_VER</sql>
+	<sql id="folder_table">INDIGO_FOLDER</sql>
+	<sql id="deploy_mapping_table">esb_DEPLOY_MAPPING</sql>  <!-- add 09.12.02 Choi.C.H -->
+	
+	<sql id="join_cols"> 
+	    SV.IS_ID, SV.FO_ID, SV.IS_ORDER, SV.IS_FILE_NAME, SV.IS_INFO, SV.IS_USE_VER, 
+	    IV.IS_VER, IV.IS_REG_USER, IV.IS_REG_DATE, IV.IS_FILE_SIZE
+	</sql>
+	
+	<sql id="join_cols2"> 
+	    SV.IS_ID, SV.FO_ID, SV.IS_ORDER, SV.IS_FILE_NAME, IV.IS_INFO, SV.IS_USE_VER, 
+	    IV.IS_VER, IV.IS_REG_USER, IV.IS_REG_DATE, IV.IS_FILE_SIZE
+	</sql>
+
+    <select id="getIServiceList" resultClass="iservice" parameterClass="map">
+        select <include refid="join_cols2" />
+        from   <include refid="iservice_table" /> SV, 
+               <include refid="iservice_ver_table" /> IV
+        where  SV.IS_ID = IV.IS_ID
+        and    SV.IS_USE_VER = IV.IS_VER
+        <isNotNull property="IS_ID">
+        and    SV.IS_ID = #IS_ID#
+        </isNotNull>
+        <isNotNull property="FO_ID">
+        and    SV.FO_ID = #FO_ID#
+        </isNotNull>
+        order by SV.IS_ORDER
+    </select>
+    
+    <select id="getIServiceByFileName" resultClass="iservice" parameterClass="map">
+        select IS_ID, FO_ID, IS_ORDER, IS_FILE_NAME, IS_USE_VER
+        from   <include refid="iservice_table" />
+        where  FO_ID = #FO_ID#
+        and    IS_FILE_NAME = #IS_FILE_NAME#
+    </select>
+        
+    <select id="getIServiceListByIsVer" resultClass="iservice" parameterClass="map">
+        select <include refid="join_cols2" />, FO.FO_PATH, FO.FO_NAME
+        from   <include refid="iservice_table" /> SV, 
+               <include refid="iservice_ver_table" /> IV,
+               <include refid="folder_table" /> FO
+        where  SV.IS_ID = IV.IS_ID
+        and    FO.FO_ID = SV.FO_ID
+        and    FO.FO_GUBUN = 'ISERVICE'
+        <isNotNull property="IS_ID">
+        	and    SV.IS_ID = #IS_ID#
+        </isNotNull>
+        <isNull property="IS_ID">
+        	and SV.IS_ID IS NULL
+        </isNull>
+        <isNotNull property="IS_VER">
+        and    IV.IS_VER = #IS_VER#
+        </isNotNull>
+        <isNull property="IS_VER">
+        order by IV.IS_VER
+        </isNull>
+    </select>
+    
+    <select id="getIServiceTreeList" resultClass="iservice" parameterClass="map">
+        select <include refid="join_cols" />, FO.FO_PATH, FO.FO_NAME
+        from   <include refid="iservice_table" /> SV, 
+               <include refid="iservice_ver_table" /> IV,
+               <include refid="folder_table" /> FO
+        where  SV.IS_ID = IV.IS_ID
+        and    SV.IS_USE_VER = IV.IS_VER
+        and    FO.FO_ID = SV.FO_ID
+        and    FO.FO_GUBUN = 'ISERVICE'
+        <dynamic>
+        	<isNotNull prepend="and" property="fo_id">
+        		FO.FO_ID = #fo_id#
+        	</isNotNull>
+        </dynamic>
+        order by FO.FO_PATH, FO.FO_ORDER, SV.IS_ORDER
+    </select>
+    
+    <select id="getIServiceMaxVersion" resultClass="int" parameterClass="String">
+        select max(IS_VER) MAX_IS_VER
+        from   <include refid="iservice_ver_table" />
+        where  IS_ID = #value#
+    </select>
+    
+    <insert id="insertIService" parameterClass="iservice">
+        insert into <include refid="iservice_table" />
+            (IS_ID, FO_ID, IS_ORDER, IS_FILE_NAME, IS_INFO, IS_USE_VER)
+        values
+            (#is_id#, #fo_id#, #is_order#, #is_file_name#, #is_info#, #is_use_ver#)
+    </insert>
+    
+    <insert id="insertIServiceVer" parameterClass="iservice">
+        insert into <include refid="iservice_ver_table" />
+            (IS_ID, IS_VER, IS_REG_USER, IS_REG_DATE, IS_FILE_SIZE, IS_FILE, IS_INFO)
+        values
+            (#is_id#, #is_ver#, #is_reg_user#, #is_reg_date#, #is_file_size#, #is_file#, #is_info#)
+    </insert>
+    
+    <update id="updateIServiceUseVer" parameterClass="map">
+        update <include refid="iservice_table" />
+        set    IS_USE_VER = #IS_USE_VER#
+        where  IS_ID = #IS_ID#
+    </update>
+    
+    <update id="updateIService" parameterClass="iservice">
+        update <include refid="iservice_table" />
+        set    IS_ORDER = #is_order# ,
+               IS_INFO  = #is_info#
+        where  IS_ID  = #is_id#
+    </update>
+    
+    <!-- add 2013.02.15 -->
+    <update id="updateIServiceVer" parameterClass="map">
+        update <include refid="iservice_ver_table" />
+        set    IS_INFO = #IS_INFO#
+        where  IS_ID = #IS_ID# AND
+        	   IS_VER = #IS_USE_VER#
+    </update>
+    <!-- add 2013.02.15 -->
+    
+    <delete id="deleteIService" parameterClass="map">
+        delete from <include refid="iservice_table" />
+        where  IS_ID = #IS_ID#
+    </delete>
+    
+    <!-- add 09.12.02 Choi.C.H -->
+    <delete id="deleteDeployMapping" parameterClass="map">
+    	delete from <include refid="deploy_mapping_table" />
+    	where IS_ID = #IS_ID#
+    </delete>
+    <!-- add 09.12.02 Choi.C.H -->
+    
+    <delete id="deleteIServiceVer" parameterClass="map">
+        delete from <include refid="iservice_ver_table" />
+        where  IS_ID = #IS_ID#
+        and    IS_VER = #IS_VER#
+    </delete>
+    
+	
+</sqlMap>

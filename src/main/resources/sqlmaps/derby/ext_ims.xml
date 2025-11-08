@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="ext_ims">
+
+	<!-- ################# IMS 이력 테이블 리스트 조회 쿼리 ################ -->
+	<select id="getRecvSendDataListByCondition" parameterClass="map" resultClass="java.util.HashMap">
+	 SELECT ZZ.*
+			FROM(
+			SELECT ROW_NUMBER() OVER () AS ROW_NUM, Z.*
+			FROM(
+			SELECT M.*, DR.TOTAL_ERR_CNT, MSG_RCV_DT,
+			  CASE 			 
+			    WHEN DR.ERROR > 0 THEN 'F'			    
+			    WHEN M.CVT_STATUS_CD = 'F' THEN 'F'
+			    WHEN DR.ING is null THEN 'N'
+			    WHEN DR.ING > 0 THEN 'N'
+			    WHEN DR.TOTAL_ERR_CNT is null THEN 'N'
+			    ELSE 'S'
+			  END AS STATUS_CD, SND_CD, RCV_CD
+			FROM
+			(
+			  SELECT ML.*, MR.CVT_STATUS_CD
+			  FROM
+			  (
+			    SELECT *
+			    FROM IMS_MSG_HUB_MASTER_LOG
+			     <dynamic prepend="WHERE">
+					<isNotEmpty prepend="AND" property="TX_ID">
+						TX_ID = #TX_ID#
+					</isNotEmpty>
+					<isNotEmpty prepend="AND" property="STA_DATE">
+						MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+					</isNotEmpty>
+					<isNotEmpty prepend="AND" property="IF_ID">
+						IF_ID = #IF_ID#
+					</isNotEmpty>
+				</dynamic>
+			    ORDER BY MSG_CREATE_DT DESC
+			  ) ML LEFT OUTER JOIN IMS_MSG_HUB_CVT_RESULT_LOG MR
+			  on ML.TX_ID = MR.TX_ID
+			) M LEFT OUTER JOIN 
+			(
+			  SELECT TX_ID, SND_CD, RCV_CD, MAX(DRR.MSG_RCV_DT) AS MSG_RCV_DT, MAX(SUCCESS) AS SUCCESS, MAX(ERROR) AS ERROR, MAX(ING) AS ING, SUM(ERR_CNT) AS TOTAL_ERR_CNT
+			  FROM
+			  (
+			    SELECT D.TX_ID, D.SND_CD, D.RCV_CD,
+			      CASE 
+			        WHEN R.STATUS_CD = 'S' THEN count(*)
+			        ELSE 0 
+			      END AS SUCCESS,
+			      CASE 
+			        WHEN R.STATUS_CD = 'F' THEN count(*)
+			        ELSE 0 
+			      END AS ERROR,
+			      CASE 
+			        WHEN R.STATUS_CD = 'N' THEN count(*)
+			        ELSE 0 
+			      END AS ING,
+			     SUM(R.ERR_CNT) AS ERR_CNT, MAX(R.MSG_RCV_DT) AS MSG_RCV_DT
+			    FROM IMS_MSG_HUB_DETAIL_LOG D left outer join IMS_MSG_HUB_RESULT_LOG R
+			        ON D.TX_ID  = R.TX_ID
+			        AND D.DEST_ID = R.DEST_ID
+			    GROUP BY D.TX_ID, D.SND_CD, D.RCV_CD,  R.STATUS_CD
+			  ) DRR
+			  GROUP BY DRR.TX_ID, DRR.SND_CD, DRR.RCV_CD
+			) DR
+			ON M.TX_ID   = DR.TX_ID
+			) Z 
+			 <dynamic prepend="WHERE">
+				<isNotEmpty property="STATUS_CD">
+					<isEqual prepend="AND" property="STATUS_CD" compareValue="S">
+						STATUS_CD = #STATUS_CD#
+					</isEqual>
+					<isNotEqual prepend="AND" property="STATUS_CD" compareValue="S">
+						STATUS_CD = #STATUS_CD# OR CVT_STATUS_CD = #STATUS_CD#
+					</isNotEqual>
+				</isNotEmpty>
+				<isNotEmpty prepend="AND" property="SND_CD">
+					SND_CD = #SND_CD#
+				</isNotEmpty>
+				<isNotEmpty prepend="AND" property="RCV_CD">
+					RCV_CD = #RCV_CD#
+				</isNotEmpty>
+			</dynamic>
+			) ZZ
+	</select>
+	
+	<!-- ################# IMS 이력 테이블 카운트 조회 쿼리 ################ -->
+	<select id="getRecvSendDataListConutByCondition" parameterClass="map" resultClass="Integer">
+	SELECT count(*)
+			FROM(
+			SELECT ROW_NUMBER() OVER () AS ROW_NUM, Z.*
+			FROM(
+			SELECT M.*, DR.TOTAL_ERR_CNT, MSG_RCV_DT,
+			  CASE 			 
+			    WHEN DR.ERROR > 0 THEN 'F'			    
+			    WHEN M.CVT_STATUS_CD = 'F' THEN 'F'
+			    WHEN DR.ING is null THEN 'N'
+			    WHEN DR.ING > 0 THEN 'N'
+			    WHEN DR.TOTAL_ERR_CNT is null THEN 'N'
+			    ELSE 'S'
+			  END AS STATUS_CD, SND_CD, RCV_CD
+			FROM
+			(
+			  SELECT ML.*, MR.CVT_STATUS_CD
+			  FROM
+			  (
+			    SELECT A.*
+			    FROM IMS_MSG_HUB_MASTER_LOG A
+			     <dynamic prepend="WHERE">
+					<isNotEmpty prepend="AND" property="TX_ID">
+						A.TX_ID = #TX_ID#
+					</isNotEmpty>
+					<isNotEmpty prepend="AND" property="STA_DATE">
+						A.MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+					</isNotEmpty>
+					<isNotEmpty prepend="AND" property="IF_ID">
+						A.IF_ID = #IF_ID#
+					</isNotEmpty>
+				</dynamic>
+			    ORDER BY MSG_CREATE_DT DESC
+			  ) ML left outer join IMS_MSG_HUB_CVT_RESULT_LOG MR
+			  on ML.TX_ID = MR.TX_ID
+			) M left outer join 
+			(
+			  SELECT TX_ID, SND_CD, RCV_CD, MAX(DRR.MSG_RCV_DT) AS MSG_RCV_DT, MAX(SUCCESS) AS SUCCESS, MAX(ERROR) AS ERROR, MAX(ING) AS ING, SUM(ERR_CNT) AS TOTAL_ERR_CNT
+			  FROM
+			  (
+			    SELECT D.TX_ID, D.SND_CD, D.RCV_CD,
+			      CASE 
+			        WHEN R.STATUS_CD = 'S' THEN count(*)
+			        ELSE 0 
+			      END AS SUCCESS,
+			      CASE 
+			        WHEN R.STATUS_CD = 'F' THEN count(*)
+			        ELSE 0 
+			      END AS ERROR,
+			      CASE 
+			        WHEN R.STATUS_CD = 'N' THEN count(*)
+			        ELSE 0 
+			      END AS ING,
+			     SUM(R.ERR_CNT) AS ERR_CNT, MAX(R.MSG_RCV_DT) AS MSG_RCV_DT
+			    FROM IMS_MSG_HUB_DETAIL_LOG D left outer join IMS_MSG_HUB_RESULT_LOG R
+			        ON D.TX_ID  = R.TX_ID
+			        AND D.DEST_ID = R.DEST_ID
+			    GROUP BY D.TX_ID, D.SND_CD, D.RCV_CD,  R.STATUS_CD
+			  ) DRR
+			  GROUP BY DRR.TX_ID, DRR.SND_CD, DRR.RCV_CD
+			) DR
+			ON M.TX_ID   = DR.TX_ID
+			) Z
+			 <dynamic prepend="WHERE">
+				<isNotEmpty property="STATUS_CD">
+					<isEqual prepend="and" property="STATUS_CD" compareValue="S">
+						Z.STATUS_CD = #STATUS_CD#
+					</isEqual>
+					<isNotEqual prepend="AND" property="STATUS_CD" compareValue="S">
+						Z.STATUS_CD = #STATUS_CD# OR Z.CVT_STATUS_CD = #STATUS_CD#
+					</isNotEqual>
+				</isNotEmpty>
+				<isNotEmpty prepend="AND" property="SND_CD">
+					Z.SND_CD = #SND_CD#
+				</isNotEmpty>
+				<isNotEmpty prepend="AND" property="RCV_CD">
+					Z.RCV_CD = #RCV_CD#
+				</isNotEmpty>
+			</dynamic>
+			) ZZ
+	</select>
+	
+	<!-- ################# IMS 이력 테이블 상세 이력 조회 쿼리 ################ -->
+	<select id="getSendMsgDataListByCondition" parameterClass="map" resultClass="java.util.HashMap">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT  S.*
+        		FROM   (
+						SELECT M.*
+								, (SELECT CVT_STATUS_CD FROM IMS_MSG_HUB_CVT_RESULT_LOG WHERE TX_ID = M.TX_ID) CVT_STATUS_CD
+					            , A.DEST_ID
+					            , A.HUB_CVT_DT
+					            , B.STATUS_CD
+					            , B.MSG_RCV_DT
+					            , B.ERR_CNT
+				        FROM   IMS_MSG_HUB_MASTER_LOG M
+				        		LEFT OUTER JOIN IMS_MSG_HUB_DETAIL_LOG A
+				        			ON M.TX_ID = A.TX_ID 
+				        		LEFT OUTER JOIN IMS_MSG_HUB_RESULT_LOG B
+					        		ON  A.TX_ID   = B.TX_ID
+					        	  	AND A.DEST_ID = B.DEST_ID
+						<dynamic prepend="where">
+						    <isNotEmpty prepend="and" property="TX_ID">
+						    M.TX_ID = #TX_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="STA_DATE">
+						    M.MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+						    </isNotEmpty>
+						    <isNotEmpty property="STATUS_CD">
+						    	<isEqual prepend="and" property="STATUS_CD" compareValue="N">
+						    B.STATUS_CD is null
+						    	</isEqual>
+						    	<isNotEqual prepend="and" property="STATUS_CD" compareValue="N">
+						    B.STATUS_CD = #STATUS_CD#
+						    	</isNotEqual>
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="IF_ID">
+						    M.IF_ID = #IF_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="SND_CD">
+						    A.SND_CD = #SND_CD#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="RCV_CD">
+						    A.RCV_CD = #RCV_CD#
+						    </isNotEmpty>
+						</dynamic>
+        				) S
+				) Z
+				 order by MSG_CREATE_DT ASC, HUB_CVT_DT ASC, MSG_RCV_DT ASC  OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+	</select>
+	
+	<!-- ################# IMS 이력 테이블 상세 이력 카운트 조회 쿼리 ################ -->
+	<select id="getSendMsgDataListCountByCondition" parameterClass="map" resultClass="Integer">
+		SELECT count(*)
+        FROM   IMS_MSG_HUB_DETAIL_LOG A LEFT OUTER JOIN IMS_MSG_HUB_RESULT_LOG B
+	    	   ON     A.TX_ID   = B.TX_ID
+ 	  	 	   AND    A.DEST_ID = B.DEST_ID
+		<dynamic prepend="WHERE">
+		    <isNotEmpty prepend="AND" property="TX_ID">
+		    A.TX_ID = #TX_ID#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="AND" property="STA_DATE">
+		    A.MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+		    </isNotEmpty>
+		    <isNotEmpty property="STATUS_CD">
+		    	<isEqual prepend="AND" property="STATUS_CD" compareValue="N">
+		    B.STATUS_CD is null
+		    	</isEqual>
+		    	<isNotEqual prepend="AND" property="STATUS_CD" compareValue="N">
+		    B.STATUS_CD = #STATUS_CD#
+		    	</isNotEqual>
+		    </isNotEmpty>
+		    <isNotEmpty prepend="AND" property="IF_ID">
+		    A.IF_ID = #IF_ID#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="AND" property="SND_CD">
+		    A.SND_CD = #SND_CD#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="AND" property="RCV_CD">
+		    A.RCV_CD = #RCV_CD#
+		    </isNotEmpty>
+		</dynamic>
+	</select>
+	
+	<!-- ################# 허브 송수신 통계 쿼리 ################ -->
+	<select id="getMessageStatisticsByCodeIfId" parameterClass="map" resultClass="java.util.HashMap">
+	 SELECT C.C_KEY,
+		C.SND_CNT, C.ERR_CNT
+		FROM
+		 (
+		SELECT A.IF_ID AS C_KEY,
+	        (CASE WHEN SUM(A.SND_CNT) IS NULL THEN 0 
+				  ELSE SUM(A.SND_CNT)  END
+			) AS SND_CNT ,
+			(CASE WHEN SUM(A.ERR_CNT) IS NULL THEN 0
+				ELSE SUM(A.ERR_CNT)  END
+			) AS ERR_CNT
+		FROM (SELECT T.*, (SELECT B.ERR_CNT  FROM  IMS_MSG_HUB_RESULT_LOG B  WHERE B.TX_ID = T.TX_ID    AND  B.DEST_ID = T.DEST_ID) AS ERR_CNT
+ 				 FROM IMS_MSG_HUB_DETAIL_LOG T WHERE T.MSG_CREATE_DT BETWEEN #STA_DATE# AND #END_DATE# ) A
+ 				 WHERE 1=1
+ 			<isNotEmpty prepend="and" property = "IF_ID">
+ 				A.IF_ID = #IF_ID#
+ 			</isNotEmpty>
+		GROUP BY A.IF_ID) C
+	</select>
+	
+	<select id="getMessageCreateStatistics" parameterClass="map" resultClass="java.util.HashMap">
+		select C.IF_ID AS C_KEY, C.MSG_CNT, C.ERR_CNT
+		FROM
+		(SELECT A.IF_ID, SUM(A.MSG_CNT) AS MSG_CNT, SUM(A.ERR_CNT) AS ERR_CNT
+			FROM   (SELECT T.*, (CASE WHEN (SELECT B.ERR_CNT  FROM  IMS_MSG_HUB_CVT_RESULT_LOG B  WHERE B.TX_ID = T.TX_ID) IS NULL THEN 0 ELSE (SELECT B.ERR_CNT  FROM  IMS_MSG_HUB_CVT_RESULT_LOG B  WHERE B.TX_ID = T.TX_ID) END) AS ERR_CNT
+ 				 FROM IMS_MSG_HUB_MASTER_LOG T
+ 				 WHERE T.MSG_CREATE_DT BETWEEN #STA_DATE# AND #END_DATE# ) A 
+ 			WHERE 1=1
+ 			<isNotEmpty prepend="AND" property="IF_ID">
+ 				A.IF_ID = #IF_ID#
+ 			</isNotEmpty>
+		GROUP BY A.IF_ID ORDER BY A.IF_ID) C
+	</select>
+	
+	<!-- ################# 시스템별 송수신 통계 쿼리 ################ -->
+	<select id="getMessageStatisticsByCodeRcvCd" parameterClass="map" resultClass="java.util.HashMap">
+	 SELECT C.C_KEY,
+		C.SND_CNT, C.ERR_CNT
+		FROM
+		 (
+		SELECT A.RCV_CD AS C_KEY,
+	        (CASE WHEN SUM(A.SND_CNT) IS NULL THEN 0 
+				  ELSE SUM(A.SND_CNT)  END
+			) AS SND_CNT ,
+			(CASE WHEN SUM(A.ERR_CNT) IS NULL THEN 0
+				ELSE SUM(A.ERR_CNT)  END
+			) AS ERR_CNT
+		FROM (SELECT T.*, (SELECT B.ERR_CNT  FROM  IMS_MSG_HUB_RESULT_LOG B  WHERE B.TX_ID = T.TX_ID    AND  B.DEST_ID = T.DEST_ID) AS ERR_CNT
+ 				 FROM IMS_MSG_HUB_DETAIL_LOG T WHERE T.MSG_CREATE_DT BETWEEN #STA_DATE# AND #END_DATE# ) A
+ 		WHERE 1=1
+		<isNotEmpty prepend="AND" property = "IF_ID">
+			A.IF_ID = #IF_ID#
+		</isNotEmpty>
+		GROUP BY A.RCV_CD) C
+	</select>
+	
+	<select id="getMessageStatisticsByCodeSndCd" parameterClass="map" resultClass="java.util.HashMap">
+	 SELECT C.C_KEY,
+			C.SND_CNT, C.ERR_CNT
+		FROM
+		 (
+		SELECT A.SND_CD AS C_KEY,
+	        (CASE WHEN SUM(A.SND_CNT) IS NULL THEN 0 
+				  ELSE SUM(A.SND_CNT)  END
+			) AS SND_CNT ,
+			(CASE WHEN SUM(A.ERR_CNT) IS NULL THEN 0
+				ELSE SUM(A.ERR_CNT)  END
+			) AS ERR_CNT
+		FROM (SELECT T.*, (SELECT B.ERR_CNT  FROM  IMS_MSG_HUB_RESULT_LOG B  WHERE B.TX_ID = T.TX_ID    AND  B.DEST_ID = T.DEST_ID) AS ERR_CNT
+ 				 FROM IMS_MSG_HUB_DETAIL_LOG T WHERE T.MSG_CREATE_DT BETWEEN #STA_DATE# AND #END_DATE# ) A
+ 				 WHERE 1=1
+ 			<isNotEmpty prepend="AND" property = "IF_ID">
+ 				A.IF_ID = #IF_ID#
+ 			</isNotEmpty>
+		GROUP BY A.SND_CD) C
+	</select>
+	
+	<!-- ################# 허브 기간별 통계 쿼리 ################ -->
+	<select id="getMessageStatisticsBySndDateCol" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT T.C_KEY, SUM(T.SND_CNT) SND_CNT, SUM(T.ERR_CNT) ERR_CNT
+		FROM (
+		SELECT 
+		<dynamic>
+			<isEqual property="IDX1" compareValue="9">
+				SUBSTR(A.MSG_CREATE_DT, 9, 2)
+			</isEqual>
+			<isEqual property="IDX1" compareValue="7">
+				SUBSTR(A.MSG_CREATE_DT, 7, 2)
+			</isEqual>
+		</dynamic>
+		C_KEY, A.SND_CNT, B.ERR_CNT
+		FROM   IMS_MSG_HUB_DETAIL_LOG A, IMS_MSG_HUB_RESULT_LOG B
+		WHERE    A.TX_ID = B.TX_ID AND A.DEST_ID = B.DEST_ID
+		AND B.MSG_RCV_DT like #DATE_STR#
+		<isNotEmpty property="SND_CD">
+			and    A.SND_CD = #SND_CD#
+		</isNotEmpty>
+		<isNotEmpty property="IF_ID">
+			and    A.IF_ID = #IF_ID#
+		</isNotEmpty>
+	) T
+	group by T.C_KEY
+	order by T.C_KEY
+	</select>
+	
+	<select id="getRecvData" parameterClass="string" resultClass="java.util.HashMap">
+		SELECT Z.*, 
+				CASE WHEN (
+					SELECT COUNT(*) FROM INDIGO_CODE WHERE CODE_DIV='01' AND CODE_ID=Z.IF_ID) > 0 THEN
+					(SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_DIV='01' AND CODE_ID=Z.IF_ID FETCH FIRST 1 ROWS ONLY)
+				ELSE 
+					Z.IF_ID
+				END
+			 AS IF_NAME
+		FROM   IMS_MSG_HUB_MASTER_LOG Z
+		WHERE  TX_ID = #value#
+	</select>
+	
+	<select id="getMaxMsgRcvDt" parameterClass="string" resultClass="string">
+		SELECT CHAR(MAX(CAST(MSG_RCV_DT AS bigint))) FROM IMS_MSG_HUB_RESULT_LOG WHERE TX_ID=#value#
+	</select>
+		
+	<resultMap class="java.util.LinkedHashMap" id="getConvertResultDataPopUpResult">
+        <result column="TX_ID" property="TX_ID" />
+        <result column="CVT_STATUS_CD" property="CVT_STATUS_CD" />
+        <result column="MSG_CVT_DT" property="MSG_CVT_DT" />
+        <result column="ERR_CNT" property="ERR_CNT" />
+        <result column="ERR_MSG" property="ERR_MSG" jdbcType="BLOB" javaType="[B" typeHandler="myblob"/>
+    </resultMap>
+	
+	<!-- <select id="getConvertResultData" parameterClass="string" resultClass="java.util.HashMap"> -->
+	<select id="getConvertResultData" parameterClass="string" resultMap="getConvertResultDataPopUpResult">
+		SELECT *
+		FROM   IMS_MSG_HUB_CVT_RESULT_LOG
+		WHERE  TX_ID = #value#
+	</select>
+	
+	<select id="getSendData" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT *
+		FROM   IMS_MSG_HUB_DETAIL_LOG
+		WHERE  TX_ID   = #TX_ID#
+		AND    DEST_ID = #DEST_ID#
+	</select>
+	
+	<resultMap class="java.util.LinkedHashMap" id="getMessageResult">
+        <result column="TX_ID" property="TX_ID" />
+        <result column="DEST_ID" property="DEST_ID" />
+        <result column="STATUS_CD" property="STATUS_CD" />
+        <result column="SND_MSG" property="SND_MSG" jdbcType="BLOB" javaType="[B" typeHandler="myblob"/>
+        <result column="ERR_CNT" property="ERR_CNT" />
+        <result column="ERR_MSG" property="ERR_MSG" jdbcType="BLOB" javaType="[B" typeHandler="myblob"/>
+    </resultMap>
+	
+	<select id="getMessage" parameterClass="map" resultMap="getMessageResult">
+		SELECT A.TX_ID
+				, A.DEST_ID
+				, A.SND_MSG
+				, B.STATUS_CD
+				, B.ERR_CNT
+				, B.ERR_MSG
+		FROM   IMS_MSG_HUB_DETAIL_LOG A LEFT OUTER JOIN IMS_MSG_HUB_RESULT_LOG B
+        	   ON     A.TX_ID   = B.TX_ID
+        	   AND    A.DEST_ID = B.DEST_ID
+		WHERE  A.TX_ID   = #TX_ID#
+		AND    A.DEST_ID = #DEST_ID#
+	</select>
+	
+	<resultMap class="java.util.LinkedHashMap" id="getSendResultDataPopUpResult">
+        <result column="TX_ID" property="TX_ID" />
+        <result column="DEST_ID" property="DEST_ID" />
+        <result column="STATUS_CD" property="STATUS_CD" />
+        <result column="MSG_RCV_DT" property="MSG_RCV_DT" />
+        <result column="ERR_CNT" property="ERR_CNT" />
+        <result column="ERR_MSG" property="ERR_MSG" jdbcType="BLOB" javaType="[B" typeHandler="myblob"/>
+    </resultMap>
+	
+	<!-- <select id="getSendResultData" parameterClass="map" resultClass="java.util.HashMap"> -->
+	<select id="getSendResultData" parameterClass="map" resultMap="getSendResultDataPopUpResult">
+		SELECT *
+		FROM   IMS_MSG_HUB_RESULT_LOG
+		WHERE  TX_ID   = #TX_ID#
+		AND    DEST_ID = #DEST_ID#
+	</select>
+	
+	<resultMap class="java.util.LinkedHashMap" id="getRecvMsgDataListByConditionResult">
+		<result column="TX_ID" property="TX_ID" />
+		<result column="IF_ID" property="IF_ID" />
+		<result column="MSG_CNT" property="MSG_CNT" />
+		<result column="MSG_CREATE_DT" property="TX_ID" />
+		<result column="HUB_RCV_DT" property="HUB_RCV_DT" />
+		<result column="MSG_TYPE" property="MSG_TYPE" />
+		<result column="CVT_STATUS_CD" property="CVT_STATUS_CD" />
+		<result column="MSG_CVT_DT" property="MSG_CVT_DT" />
+		<result column="ERR_CNT" property="ERR_CNT" />		
+	</resultMap>
+	
+	<!-- <select id="getRecvMsgDataListByCondition" parameterClass="map" resultMap="getRecvMsgDataListByConditionResult"> -->
+	<select id="getRecvMsgDataListByCondition" parameterClass="map" resultClass="java.util.HashMap">
+	   	
+		SELECT S.*
+        FROM   (
+				SELECT A.*, B.CVT_STATUS_CD, B.MSG_CVT_DT, B.ERR_CNT
+				FROM IMS_MSG_HUB_MASTER_LOG A LEFT OUTER JOIN IMS_MSG_HUB_CVT_RESULT_LOG B
+				     ON A.TX_ID = B.TX_ID
+				     LEFT OUTER JOIN USER_IF_MAPP_INFO C
+				     ON A.IF_ID = C.IF_ID
+				<dynamic prepend="WHERE">
+				    <isNotEmpty prepend="AND" property="TX_ID">
+				    	A.TX_ID = #TX_ID#
+				    </isNotEmpty>
+				    <isNotEmpty prepend="AND" property="STA_DATE">
+				    	A.MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+				    </isNotEmpty>
+				    <isNotEmpty property="STATUS_CD">
+				    	<isEqual prepend="AND" property="STATUS_CD" compareValue="N">
+				    		B.CVT_STATUS_CD is null
+				    	</isEqual>
+				    	<isNotEqual prepend="AND" property="STATUS_CD" compareValue="N">
+				    		B.CVT_STATUS_CD = #STATUS_CD#
+				    	</isNotEqual>
+				    </isNotEmpty>
+				    <isNotEmpty property="USER_AUTH">
+				    	<isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+				    		C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+				    	</isEqual>
+				    </isNotEmpty>
+				    <isNotEmpty prepend="AND" property="IF_ID">
+				    	A.IF_ID = #IF_ID#
+				    </isNotEmpty>
+				    <isNotEmpty prepend="AND" property="TX_ID">
+				    	A.TX_ID = #TX_ID#
+				    </isNotEmpty>
+				</dynamic>
+
+        ) S 
+         ORDER BY MSG_CREATE_DT ASC, HUB_RCV_DT ASC  OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+	</select>
+	
+	<select id="getRecvMsgDataListCountByCondition" parameterClass="map" resultClass="Integer">
+		SELECT COUNT(*)
+		FROM IMS_MSG_HUB_MASTER_LOG A LEFT OUTER JOIN IMS_MSG_HUB_CVT_RESULT_LOG B
+				on A.TX_ID = B.TX_ID
+			LEFT OUTER JOIN USER_IF_MAPP_INFO C
+				ON A.IF_ID = C.IF_ID
+		<dynamic prepend="WHERE">
+		    <isNotEmpty prepend="AND" property="TX_ID">
+		    A.TX_ID = #TX_ID#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="AND" property="STA_DATE">
+		    A.MSG_CREATE_DT BETWEEN #STA_DATE# AND #END_DATE#
+		    </isNotEmpty>
+		    <isNotEmpty property="STATUS_CD">
+		    	<isEqual prepend="AND" property="STATUS_CD" compareValue="N">
+		    B.CVT_STATUS_CD IS NULL
+		    	</isEqual>
+		    	<isNotEqual prepend="AND" property="STATUS_CD" compareValue="N">
+		    B.CVT_STATUS_CD = #STATUS_CD#
+		    	</isNotEqual>
+		    </isNotEmpty>
+		    <isNotEmpty property="USER_AUTH">
+		    	<isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+		    		C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+		    	</isEqual>
+		    </isNotEmpty>
+		    <isNotEmpty prepend="AND" property="IF_ID">
+		    A.IF_ID = #IF_ID#
+		    </isNotEmpty>
+		</dynamic>
+	</select>
+	
+	<select id="getTodaySendAmountConutByCondition" parameterClass="map" resultClass="java.util.HashMap">
+			SELECT 
+            	SUM(D.SND_CNT) AS TOT_COUNT,
+			    SUM(CASE WHEN R.STATUS_CD = 'S' THEN D.SND_CNT ELSE 0 END) AS SUCCESS,
+            	SUM(CASE WHEN R.STATUS_CD = 'F' THEN D.SND_CNT ELSE 0 END) AS ERR_CNT,
+            	SUM(CASE WHEN R.STATUS_CD = 'N' THEN D.SND_CNT ELSE 0 END) AS QUEUEING
+			FROM IMS_MSG_HUB_DETAIL_LOG D left outer join IMS_MSG_HUB_RESULT_LOG R
+			    ON D.TX_ID  = R.TX_ID
+			    AND D.DEST_ID = R.DEST_ID
+			WHERE
+				D.MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+			GROUP BY R.STATUS_CD
+	</select>
+	
+		<select id="getSendMsgDataBasicInfoByCondition" parameterClass="map" resultClass="java.util.HashMap">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT ROW_NUMBER() OVER () AS ROW_NUM, S.*
+        		FROM   (
+						SELECT A.IF_ID, A.SND_CD, A.RCV_CD, A.SND_CNT, A.MSG_CREATE_DT, A.HUB_CVT_DT, A.TX_ID, A.DEST_ID, B.STATUS_CD, B.MSG_RCV_DT, B.ERR_CNT,
+							CASE WHEN (
+								SELECT COUNT(*) FROM INDIGO_CODE WHERE CODE_DIV='01' AND CODE_ID=A.IF_ID) > 0 THEN
+								(SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_DIV='01' AND CODE_ID=A.IF_ID FETCH FIRST 1 ROWS ONLY)
+							ELSE 
+								A.IF_ID
+							END
+							AS IF_NAME,
+				         	(SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_DIV = '02' AND CODE_ID = A.SND_CD) SND_NAME, 
+				        	(SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_DIV = '02' AND CODE_ID = A.RCV_CD) RCV_NAME 
+				        FROM   IMS_MSG_HUB_DETAIL_LOG A LEFT OUTER JOIN IMS_MSG_HUB_RESULT_LOG B
+				        	   ON     A.TX_ID   = B.TX_ID
+				        	   AND    A.DEST_ID = B.DEST_ID
+				       	LEFT OUTER JOIN USER_IF_MAPP_INFO C
+				       			ON A.IF_ID = C.IF_ID WHERE 1=1
+						    <isNotEmpty prepend="AND" property="TX_ID">
+						    A.TX_ID = #TX_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="AND" property="STA_DATE">
+						    A.MSG_CREATE_DT between #STA_DATE# AND #END_DATE#
+						    </isNotEmpty>
+						    <isNotEmpty property="STATUS_CD">
+						    	<isEqual prepend="AND" property="STATUS_CD" compareValue="N">
+						    B.STATUS_CD is null
+						    	</isEqual>
+						    	<isNotEqual prepend="AND" property="STATUS_CD" compareValue="N">
+						    B.STATUS_CD = #STATUS_CD#
+						    	</isNotEqual>
+						    </isNotEmpty>
+						    <isNotEmpty prepend="AND" property="IF_ID">
+						    A.IF_ID = #IF_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="AND" property="SND_CD">
+						    A.SND_CD = #SND_CD#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="AND" property="RCV_CD">
+						    A.RCV_CD = #RCV_CD#
+						    </isNotEmpty>
+							<isNotEmpty property="USER_AUTH">
+							    <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+							     C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+							    </isEqual>
+							</isNotEmpty>
+						ORDER BY A.MSG_CREATE_DT DESC
+        				) S 
+        				<dynamic prepend ="WHERE">
+							<isNotEmpty  prepend="AND" property="SND_IF_NAME"  >
+								S.SND_NAME LIKE '%' || #SND_IF_NAME# || '%'
+							</isNotEmpty>
+							<isNotEmpty  prepend="AND" property="RCV_IF_NAME" >
+								S.RCV_NAME LIKE '%' || #RCV_IF_NAME# || '%'
+							</isNotEmpty>
+						</dynamic>
+
+				) Z
+		<![CDATA[
+				where  row_num = 1
+			]]>
+	</select>
+	
+	<resultMap class="java.util.HashMap" id="getRetryMessageInfoResult">
+		<result column="SND_MSG" property="SND_MSG" jdbcType="BLOB" javaType="[B" ></result>
+	</resultMap>
+	
+	<!-- retry -->
+	<select id="getRetryMessageInfo" parameterClass="java.util.HashMap" resultMap="getRetryMessageInfoResult">
+		select imhd.SND_MSG from ims_msg_hub_detail_log imhd
+		where imhd.tx_id = #TX_ID#
+		and imhd.dest_id = #DEST_ID#
+	</select>
+	
+	<update id="updateConvertStatusCd" parameterClass="map">
+		update IMS_MSG_HUB_CVT_RESULT_LOG
+		set    CVT_STATUS_CD = #STATUS_CD#
+		where  TX_ID = #TX_ID#
+	</update>
+	
+	
+	<update id="updateSendStatusCd" parameterClass="map">
+	    update IMS_MSG_HUB_RESULT_LOG
+		set    STATUS_CD = #STATUS_CD#
+		where  TX_ID   = #TX_ID#
+		and    DEST_ID = #DEST_ID#
+	</update>
+	
+	<update id="DETAIL_UPDATE_CVT_DATE" parameterClass="java.util.HashMap" >
+		update IMS_MSG_HUB_DETAIL_LOG 
+		set 
+			HUB_CVT_DT		= #HUB_CVT_DT#
+		where
+		   	TX_ID 			=  #TX_ID#
+		and DEST_ID			= #DEST_ID# 
+	</update>
+	
+	<update id="RESULT_UPDATE" parameterClass="java.util.HashMap" >
+		update IMS_MSG_HUB_RESULT_LOG 
+		set 
+			STATUS_CD 	= #STATUS_CD#, 
+			MSG_RCV_DT	= #MSG_RCV_DT#, 
+			ERR_CNT 	= #ERR_CNT#, 
+			ERR_MSG 	= #ERR_MSG#
+		where
+		   		TX_ID 	= #TX_ID#	
+		    AND DEST_ID = #DEST_ID#
+	</update>
+	
+	<update id="RESULT_RETRY_CNT_UPDATE" parameterClass="java.util.HashMap" >
+		update IMS_MSG_HUB_RESULT_LOG 
+		set 
+		    RETRY_CNT 	= RETRY_CNT+1,
+			STATUS_CD 	= #STATUS_CD#
+		where
+		   		TX_ID 	= #TX_ID#
+		    AND DEST_ID = #DEST_ID#
+	</update>
+	
+	<update id="updateMasterMsgCreateDt" parameterClass="java.util.HashMap" >
+		update ims_msg_hub_master_log 
+		set msg_create_dt = #MSG_CREATE_DT#
+		where tx_id 	= #TX_ID#
+	</update>
+	
+	<update id="updateDetailMsgCreateDt" parameterClass="java.util.HashMap" >
+		update ims_msg_hub_detail_log 
+		set msg_create_dt = #MSG_CREATE_DT#
+		where tx_id 	= #TX_ID#
+	</update>
+	
+</sqlMap>

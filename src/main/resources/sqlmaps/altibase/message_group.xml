@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap  PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"  "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="message_group">
+	
+	<typeAlias alias="messageVO" type="com.indigo.web.esb.vo.ESBMessageVO"/>
+	<typeAlias alias="detailVO" type="com.indigo.web.esb.vo.ESBDetailIDVO"/>
+	<typeAlias alias="columnInfoVO" type="com.indigo.web.esb.vo.ESBDBColumnInfoVO"/>
+	
+	<sql id="message_group_table">MESSAGE_INFO</sql>
+	<sql id="dbmessage_group_table">DB_MESSAGE</sql>
+	<sql id="dbtable_group_table">DB_TABLE</sql>
+	<sql id="dbcolumn_group_table">DB_COLUMN</sql>
+	
+     <!-- 해당 컬럼명의 type 조회 -->
+	<select id="selectType" resultClass="String" parameterClass="java.util.HashMap">
+		SELECT DATA_TYPE FROM USER_TAB_COLUMNS WHERE TABLE_NAME= #table_name# AND COLUMN_NAME= #column_name#
+   </select>
+   <!-- 해당 컬럼명의 alias 조회 -->
+   	<select id="selectAlias" resultClass="String" parameterClass="java.util.HashMap">
+		SELECT COMMENTS FROM ALL_COL_COMMENTS WHERE TABLE_NAME= #table_name# AND COLUMN_NAME= #column_name#
+   </select>
+   
+    <!-- 메시지 등록 -->
+    <insert id="insertMessage" parameterClass="java.util.HashMap">
+		insert into <include refid="message_group_table" />	values(#message_id#,#message_name#,#message_type#,#message_memo#)
+	</insert>
+	<insert id="insertDBMessage"  parameterClass="java.util.HashMap">
+		insert into <include refid="dbmessage_group_table" /> values(#message_id#,#url#,#connection_id#,#connection_pwd#)
+	</insert>
+	<insert id="insertDBTable"  parameterClass="java.util.HashMap">
+		insert into <include refid="dbtable_group_table" /> values(#keyvalue#,#message_id#,#table_name#,#parent:VARCHAR#,#root:VARCHAR#)
+	</insert>
+	<insert id="insertDBColumn"  parameterClass="java.util.HashMap">
+		insert into <include refid="dbcolumn_group_table" /> values(columnnum_sequence.NEXTVAL,#keyvalue#,#column_name#,#TypeResult#,#AliasResult#)
+	</insert>
+	
+	<!-- 메시지 삭제 -->
+	<delete id="deleteDBColumn" parameterClass="String">
+		delete from	<include refid="dbcolumn_group_table" /> where table_id like #message_id#|| '%'
+	</delete>
+	<delete id="deleteDBTable" parameterClass="String">
+		delete from <include refid="dbtable_group_table"/> where message_id = #message_id#
+	</delete>
+	<delete id="deleteDBMessage" parameterClass="String">
+		delete from <include refid="dbmessage_group_table"/> where message_id = #message_id#
+	</delete>
+	 <delete id="deleteMessage" parameterClass="String">
+    	delete from <include refid="message_group_table"/> where MESSAGE_ID = #message_id# 
+    </delete>
+    
+    <!-- 업데이트 정보 조회 -->
+    <select id = "otherMessageInfo" parameterClass ="String" resultClass = "String">
+    	select message_memo from <include refid="message_group_table" /> where message_id = #message_id#
+    </select>
+    <select id = "otherDBMessageInfo" parameterClass = "String" resultClass="java.util.HashMap">
+    	select CONNECTION_URL, CONNECTION_NAME, CONNECTION_PWD from <include refid="dbmessage_group_table"/> where message_id = #message_id#
+    </select>
+    <select id="otherColumnInfo" parameterClass="String" resultClass="java.util.HashMap">
+    	select table_name from <include refid="dbtable_group_table" /> where message_id = #message_id#
+    </select>
+    
+    <!-- 업데이트 -->
+     <update id="updateMessage" parameterClass="java.util.HashMap">
+		update <include refid="message_group_table" />	set message_name = #message_name#, message_type = #message_type#, message_memo = #message_memo# where message_id = #message_id#
+	</update>
+	<update id="updateDBMessage"  parameterClass="java.util.HashMap">
+		update <include refid="dbmessage_group_table" /> set connection_url = #url#, connection_name = #connection_id#, connection_pwd = #connection_pwd# where message_id = #message_id#
+	</update>
+	<update id="updateDBTable"  parameterClass="java.util.HashMap">
+		update <include refid="dbtable_group_table" /> set table_id = #keyvalue#, table_name = #table_name# where message_id = #message_id#
+	</update>
+    
+     <!-- DB, FILE, TCP 메시지 종류에 따른 리스트 select -->
+    <select id="selectDBmessage" resultClass="detailVO">
+       	select  id,column_name,column_type,column_alias from DB_MESSAGE
+    </select>
+   
+   <!-- 검색관련 --> 
+    <select id="getMessageList" resultClass="messageVO"
+	parameterClass="java.util.Map">
+	select t2.* from(
+	select ROWNUM row_num, t1.* from(
+	select * from
+	<include refid="message_group_table" />
+	<dynamic prepend="WHERE">
+		<isNotNull prepend="and" property="id">
+			message_id like '%'
+			||#id#|| '%'
+		</isNotNull>
+		<isNotNull prepend="and" property="name">
+			message_name like '%'
+			||#name#|| '%'
+		</isNotNull>
+		<isNotNull prepend="and" property="if_id">
+			if_id = #if_id#
+		</isNotNull>
+	</dynamic>
+	)t1
+	)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+
+	<select id="getTotalCnt" resultClass="int" parameterClass="java.util.Map">
+		select count(*) from
+		<include refid="message_group_table" />
+		<dynamic prepend="WHERE">
+			<isNotNull prepend="and" property="id">
+				message_id like '%' ||#id#|| '%'
+			</isNotNull>
+			<isNotNull prepend="and" property="name">
+				message_name like '%' ||#name#|| '%'
+			</isNotNull>
+		</dynamic>
+	</select>
+	
+	<!-- 메시지 아이디 중복체크 -->
+	<select id="selectMessage" resultClass="String" parameterClass="String">
+		select * from <include refid="message_group_table" /> where message_id = #message_id#
+	</select>
+	<!--  -->
+	<!-- 선택 된 테이블 이름으로 컬럼 조회 -->
+	<select id="selectTableInfo" resultClass="columnInfoVO" parameterClass="String">
+		SELECT DISTINCT A.COLUMN_NAME AS COLUMN_NAME, DATA_TYPE AS COLUMN_TYPE, COMMENTS  AS COLUMN_ALIAS FROM ALL_COL_COMMENTS A, USER_TAB_COLUMNS B where A.COLUMN_NAME = B.COLUMN_NAME AND A.TABLE_NAME = #table_name#
+     </select>
+	
+	<select id = "selectDB" resultClass="columnInfoVO" parameterClass="String">
+		select column_name, column_type, column_alias from <include refid="dbcolumn_group_table" /> where table_id like #message_id#|| '%'
+	</select>
+	
+	<select id="selectAllMessages" resultClass = "messageVO" parameterClass="java.util.Map">
+		select * from <include refid="message_group_table" />
+	</select>
+	
+	<select id="getMessageById" resultClass = "messageVO" parameterClass="java.util.Map">
+		select * from <include refid="message_group_table" /> where message_id=#message_id#
+	</select>
+	
+</sqlMap>

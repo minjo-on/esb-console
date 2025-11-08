@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="esb_sa">
+
+	<typeAlias alias="assembly" type="com.indigo.web.esb.vo.AssemblyVO"/>
+	<typeAlias alias="saStateVo" type="com.indigo.web.esb.vo.SaStateVO"/>
+	
+	<sql id="sa_table">ADT_SA</sql>
+	<sql id="isa_table">ADT_INSTANCE_SA</sql>
+	<sql id="su_table">ADT_SU</sql>
+	<sql id="ep_table">ADT_ENDPOINT</sql>
+	<sql id="me_table">ADT_MESSAGE_EXCHANGE</sql>
+	
+    <select id="getAssemblyList" parameterClass="map" resultClass="assembly">
+        select SA.ID_SA, SA.SA_NAME, SA.DESCRIPTION, SA.UNIT_COUNT, count(ISA.ID_INSTANCE_SA) INSTANCE_SA_CNT
+        from   <include refid="sa_table" /> SA left outer join <include refid="isa_table" /> ISA
+               on (SA.ID_SA = ISA.ID_SA)
+        group by SA.ID_SA, SA.SA_NAME, SA.DESCRIPTION, SA.UNIT_COUNT
+        <isNotNull property="SA_NAME">
+        order by SA_NAME
+        </isNotNull>
+        <isNotNull property="ID_SA">
+        order by ID_SA
+        </isNotNull>
+    </select>
+    
+    <select id="getAssemblyCount" resultClass="int">
+        select count(*)
+        from   <include refid="sa_table" />
+    </select>
+    <update id="updateDescription" parameterClass="map">
+		update <include refid="sa_table" />
+		set    DESCRIPTION = #DESCRIPTION# 
+		where  ID_SA = #ID_SA#
+    </update>
+    
+    <select id="getSendSaCount" parameterClass="map" resultClass="java.util.HashMap">
+        select SA.DESCRIPTION SA_NAME, count(ME.ID_ENDPOINT_SOURCE) SEND_CNT
+        from   <include refid="sa_table" /> SA,
+               <include refid="su_table" /> SU,
+               <include refid="ep_table" /> EP,
+               <include refid="me_table" /> ME
+        where  SA.ID_SA = SU.ID_SA
+        and    SU.ID_SU = EP.ID_SU
+        and    EP.ID_ENDPOINT = ME.ID_ENDPOINT_SOURCE
+        and    ME.ME_DATE between #FROM_DATE# and #TO_DATE#
+        group by SA.DESCRIPTION
+    </select>
+    
+    <select id="getRecvSaCount" parameterClass="map" resultClass="java.util.HashMap">
+        select SA.DESCRIPTION SA_NAME, count(ME.ID_ENDPOINT_SOURCE) RECV_CNT
+        from   <include refid="sa_table" /> SA,
+               <include refid="su_table" /> SU,
+               <include refid="ep_table" /> EP,
+               <include refid="me_table" /> ME
+        where  SA.ID_SA = SU.ID_SA
+        and    SU.ID_SU = EP.ID_SU
+        and    EP.ID_ENDPOINT = ME.ID_ENDPOINT_TARGET
+        and    ME.ME_DATE between #FROM_DATE# and #TO_DATE#
+        group by SA.DESCRIPTION
+    </select>
+    
+    <select id="getSaStateCnt" parameterClass="map" resultClass="saStateVo">
+		SELECT SA_NAME,
+	       ID_SA,
+	       MAX(DECODE(STATE, 'COMPLETE', CNT, 0)) COMPLETE,
+	       MAX(DECODE(STATE, 'DONE', CNT, 0)) DONE,
+	       MAX(DECODE(STATE, 'ACTIVE', CNT, 0)) ACTIVE,
+	       MAX(DECODE(STATE, 'ERROR', CNT, 0)) ERROR,
+	       MAX(DECODE(STATE, 'COMPLETE', CNT, 0)) + MAX(DECODE(STATE, 'DONE', CNT, 0)) + MAX(DECODE(STATE, 'ACTIVE', CNT, 0)) +  MAX(DECODE(STATE, 'ERROR', CNT, 0)) STATESUM
+		FROM
+		(
+			SELECT Nvl(t1.cnt, 0) cnt, state, sa.sa_name, sa.id_sa
+            FROM <include refid="sa_table" /> sa,
+                (SELECT COUNT(isa.state) cnt, isa.state, isa.id_sa
+                   FROM <include refid="me_table" /> me, 
+                   		<include refid="isa_table" /> isa
+                  WHERE me.id_instance_sa = isa.id_instance_sa
+                    and me.me_date between #FROM_DATE# and #TO_DATE#
+                  GROUP BY isa.state, isa.id_sa) t1
+            WHERE t1.id_sa(+) = sa.id_sa
+            <isNotEmpty property="SA_ID">
+        			and sa.id_sa = #SA_ID#
+        	</isNotEmpty>
+		) A
+		group by SA_NAME, ID_SA
+		order by STATESUM desc
+    </select>
+    
+     <select id="getSaHHStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+    	select count(isa.STATE) as CNT, isa.STATE, to_char(me.me_date,'hh24') as HH, sa.id_sa
+		from <include refid="me_table" /> me, 
+			 <include refid="isa_table" /> isa, 
+			 <include refid="sa_table" /> sa
+		where me.id_instance_sa = isa.id_instance_sa
+			and isa.id_sa = sa.id_sa 
+			and me.me_date between #FROM_DATE# and #TO_DATE#
+			<isNotEmpty property="SA_ID">
+       		and sa.id_sa = #SA_ID#
+       		</isNotEmpty>
+		group by isa.STATE, to_char(me.me_date,'hh24'),sa.id_sa
+	</select>
+	
+	
+	 <select id="getSaDDStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+    	select count(isa.STATE) as CNT, isa.STATE, to_char(me.me_date,'DD') as DD, sa.id_sa
+		from <include refid="me_table" /> me, 
+			 <include refid="isa_table" /> isa, 
+			 <include refid="sa_table" /> sa
+		where me.id_instance_sa = isa.id_instance_sa
+			and isa.id_sa = sa.id_sa 
+			and me.me_date between #FROM_DATE# and #TO_DATE#
+			<isNotEmpty property="SA_ID">
+       		and sa.id_sa = #SA_ID#
+       		</isNotEmpty>
+		group by isa.STATE, to_char(me.me_date,'DD'),sa.id_sa
+	</select>
+    
+    <select id="getSaStateCntGroupByHH" parameterClass="map" resultClass="java.util.HashMap">
+    	select A.HH,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR
+		from(
+			select count(isa.STATE) as CNT, isa.STATE, to_char(me.me_date,'hh24') as HH
+			from <include refid="me_table" /> me, 
+				 <include refid="isa_table" /> isa, 
+				 <include refid="sa_table" /> sa
+			where me.id_instance_sa = isa.id_instance_sa
+				and isa.id_sa = sa.id_sa 
+				and me.me_date between #FROM_DATE# and #TO_DATE#
+				<isNotEmpty property="SA_ID">
+        		and sa.id_sa = #SA_ID#
+        		</isNotEmpty>
+			group by isa.STATE, to_char(me.me_date,'hh24')
+		)A
+		group by A.HH
+    </select>
+    
+      <select id="getSaStateCntGroupByDD" parameterClass="map" resultClass="java.util.HashMap">
+    	select A.DD,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR
+		from(
+			select count(isa.STATE) as CNT, isa.STATE, to_char(me.me_date,'DD') as DD
+			from <include refid="me_table" /> me, 
+				 <include refid="isa_table" /> isa, 
+				 <include refid="sa_table" /> sa
+			where me.id_instance_sa = isa.id_instance_sa
+				and isa.id_sa = sa.id_sa 
+				and me.me_date between #FROM_DATE# and #TO_DATE#
+				<isNotEmpty property="SA_ID">
+        		and sa.id_sa = #SA_ID#
+        		</isNotEmpty>
+			group by isa.STATE, to_char(me.me_date,'DD')
+		)A
+		group by A.DD
+    </select>
+    
+    
+    <select id="getSaDelayTime" parameterClass="map" resultClass="java.util.HashMap">
+    	select sa.sa_name, nvl(delay,0) delay
+    	from <include refid="sa_table" /> sa,(
+	    	 select isa.id_sa, round(avg(to_char(isa.end_date,'MISSFF4')- to_char(isa.start_date,'MISSFF4')),0 )as delay 
+			 from 
+			 	<include refid="me_table" /> me, 
+			 	<include refid="isa_table" /> isa
+			 where me.id_instance_sa = isa.id_instance_sa
+			    and me.me_date between #FROM_DATE# and #TO_DATE#
+			 group by isa.id_sa
+			 )t1
+		where
+			t1.id_sa(+) = sa.id_sa
+    </select>
+    
+</sqlMap>

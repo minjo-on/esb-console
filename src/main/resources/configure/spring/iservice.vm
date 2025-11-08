@@ -1,0 +1,18 @@
+<beans>
+#foreach( $iservice in $data )
+	<bean id="$iservice.id" class="$iservice.clazz" autowire="$iservice.autowire" lazy-init="$iservice.lazyInit" dependency-check="$iservice.dependencyCheck" init-method="$iservice.initMethod" destroy-method="$iservice.destroyMethod">
+        <description><![CDATA[$iservice.description]]></description>
+        #foreach( $propertyList in $iservice.propertyList )
+        #if ( $propertyList.getType() == "value" )
+        <property name="$propertyList.getName()" value="$propertyList.getValue()">
+            <description><![CDATA[$propertyList.getKorName()]]></description>
+        </property>
+        #else
+        <property name="$propertyList.getName()" ref="$propertyList.getValue()">
+            <description><![CDATA[$propertyList.getKorName()]]></description>
+        </property>
+        #end
+        #end
+    </bean>
+#end
+</beans>

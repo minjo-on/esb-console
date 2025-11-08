@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="indigo_folder">
+
+	<typeAlias alias="folder" type="com.indigo.web.mgmt.vo.IndigoFolderVO"/>
+	
+	<sql id="folder_table">INDIGO_FOLDER</sql>
+	
+	<sql id="folder_cols">
+	    FO_ID, FO_PID, FO_ORDER, FO_PATH, FO_NAME, FO_INFO, FO_GUBUN, FO_REG_DATE, FO_REG_USER
+	</sql>
+
+    <select id="getFolderInfo" parameterClass="string" resultClass="folder">
+        select <include refid="folder_cols" />
+        from   <include refid="folder_table" />
+    <![CDATA[
+        where  FO_ID = #value:VARCHAR:NO_ENTRY#
+    ]]>
+    </select>
+    
+    <select id="getGubunOfRootFolderInfo" parameterClass="string" resultClass="folder">
+        select <include refid="folder_cols" />
+        from   <include refid="folder_table" />
+        where  FO_PID is null
+        and    FO_GUBUN = #value:VARCHAR:NO_ENTRY#
+    </select>
+    
+    <select id="getSubFolderListByFoId" parameterClass="map" resultClass="folder">
+        select <include refid="folder_cols" />
+        from   <include refid="folder_table" />
+        <dynamic prepend="where">
+          <isNull prepend="and" property="FO_PID">
+            FO_PID is null
+          </isNull>
+          <isNotNull prepend="and" property="FO_PID">
+            FO_PID = #FO_PID:VARCHAR:NO_ENTRY#
+          </isNotNull>
+          <isNotNull prepend="and" property="FO_GUBUN">
+            FO_GUBUN = #FO_GUBUN:VARCHAR:NO_ENTRY#
+          </isNotNull>
+        </dynamic>
+        order by FO_ORDER
+    </select>
+    
+    <insert id="insertFolder" parameterClass="folder">
+    	insert into <include refid="folder_table" />
+    	(<include refid="folder_cols" />)
+    	values
+    	(#fo_id:VARCHAR:NO_ENTRY#, #fo_pid:VARCHAR:NO_ENTRY#, #fo_order:NUMERIC:-999999#, #fo_path:VARCHAR:NO_ENTRY#, 
+    	 #fo_name:VARCHAR:NO_ENTRY#, #fo_info:VARCHAR:NO_ENTRY#, #fo_gubun:VARCHAR:NO_ENTRY#, 
+    	 #fo_reg_date:TIMESTAMP#, #fo_reg_user:VARCHAR:NO_ENTRY#)
+    </insert>
+    
+    <update id="updateFolderInfo" parameterClass="folder">
+		update <include refid="folder_table" />
+		set    FO_ORDER = #fo_order:NUMERIC:-999999# , 
+		       FO_PATH  = #fo_path:VARCHAR:NO_ENTRY#  ,
+		       FO_NAME  = #fo_name:VARCHAR:NO_ENTRY#  ,  
+		       FO_INFO  = #fo_info:VARCHAR:NO_ENTRY# 
+		where  FO_ID = ?    
+    </update>
+    
+    <delete id="deleteFolder" parameterClass="string">
+        delete from <include refid="folder_table" />
+        where  FO_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+    
+	
+</sqlMap>

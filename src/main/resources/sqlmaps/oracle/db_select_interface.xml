@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="db_select_interface">
+
+    <typeAlias alias="dbSelectInterface" type="com.indigo.web.dbselect.interfaceinfo.DbSelectInterfaceVO"/>
+
+    <resultMap id="dbSelectInterfaceResult" class="dbSelectInterface">
+        <result property="interfaceId" column="INTERFACE_ID"/>
+        <result property="interfaceName" column="INTERFACE_NAME"/>
+        <result property="tableName" column="TABLE_NAME"/>
+    </resultMap>
+
+    <select id="selectInterfaceList" resultMap="dbSelectInterfaceResult">
+        SELECT DISTINCT T.INTERFACE_ID, I.INTERFACE_NAME, T.TABLE_NAME
+        FROM INTERFACE_TABLE T
+        JOIN ATB_INTERFACE I
+        ON T.INTERFACE_ID = I.INTERFACE_ID
+    </select>
+
+    <update id="updateDbSelectInterface" parameterClass="dbSelectInterface">
+        UPDATE INTERFACE_TABLE
+        SET TABLE_NAME = #tableName#
+        WHERE INTERFACE_ID = #interfaceId#
+    </update>
+
+    <delete id="deleteDbSelectInterface" parameterClass="dbSelectInterface">
+        DELETE FROM INTERFACE_TABLE
+        WHERE INTERFACE_ID = #interfaceId#
+    </delete>
+
+    <insert id="insertDbSelectInterface" parameterClass="dbSelectInterface">
+        INSERT INTO INTERFACE_TABLE (INTERFACE_ID, TABLE_NAME)
+        VALUES (#interfaceId#, #tableName#)
+    </insert>
+
+    <select id="selectInterfaceListByPatternDt" resultMap="dbSelectInterfaceResult">
+        SELECT INTERFACE_ID, INTERFACE_NAME
+        FROM ATB_INTERFACE
+        WHERE PATTERN_NAME LIKE '%DT%'
+    </select>
+</sqlMap>

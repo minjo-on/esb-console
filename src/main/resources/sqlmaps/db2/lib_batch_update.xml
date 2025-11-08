@@ -1,0 +1,558 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="lib_batch_update">
+
+	<typeAlias alias="libbatchupdateVo" type="com.indigo.web.agent.vo.LibBatchUpdateVO" />
+	<typeAlias alias="libbatchupdatezipVo" type="com.indigo.web.agent.vo.LibBatchUpdateZipVO" />
+	<typeAlias alias="libbatchupdatestatusVo" type="com.indigo.web.agent.vo.LibBatchUpdateStatusVO" />
+	<typeAlias alias="libbatchupdatedeployimVo" type="com.indigo.web.agent.vo.LibBatchUpdateDeployimVO"/>
+	<typeAlias alias="libbatchdeploystatusVo" type="com.indigo.web.agent.vo.LibBatchDeployStatusVO"/>
+
+	<sql id="table">LIBBATCHUPDATE_LIB</sql>
+
+
+	<select id="getLibList" resultClass="libbatchupdateVo">
+		SELECT * FROM LIBBATCHUPDATE_LIB
+		WHERE STATE = 'N'
+	</select>
+
+	<insert id="insertLibInfo" parameterClass="libbatchupdateVo">
+		INSERT INTO
+		LIBBATCHUPDATE_LIB(ID, LIBNAME, TYPENAME, PDTYPE, LIBSIZE) VALUES(#id#,
+		#libname# , #typename#, #pdtype#, #libsize#)
+	</insert>
+
+	<delete id="deleteLib" parameterClass="string">
+		DELETE LIBBATCHUPDATE_LIB
+		WHERE ID = #id#
+	</delete>
+
+	<select id="getElementById" parameterClass="string" resultClass="libbatchupdateVo">
+		SELECT * FROM LIBBATCHUPDATE_LIB WHERE ID = #id#
+	</select>
+
+	<update id="updateCompress" parameterClass="string">
+		UPDATE LIBBATCHUPDATE_LIB
+		SET STATE='Y', ZIPID= #value# WHERE STATE='N'
+	</update>
+	
+	<select id="getZipJarRelationList" parameterClass="string" resultClass="libbatchupdateVo">
+		SELECT * FROM LIBBATCHUPDATE_LIB WHERE ZIPID =#zipid#
+	</select>	
+
+	<insert id="insertZipMaster" parameterClass="java.util.HashMap">
+		INSERT INTO LIBBATCHUPDATE_ZIP (ZIPNAME, DESCRIPTION, ZIPID, ZIPSIZE, CHECKSUMSIZE, DESCRIPTION_ALIAS, DEPLOYTYPE) 
+			VALUES(#ZIPNAME#, #DESCRIPTION#, #ZIPID#, #ZIPSIZE#, #CHECKSUMSIZE#,#DESCRIPTION_ALIAS#, #DEPLOYTYPE#)
+	</insert>
+	
+	<select id ="selectImList"  resultClass="string" parameterClass="java.util.HashMap">
+	  SELECT PD_NAME FROM esb_PRODUCT
+	  WHERE PD_TYPE = 'IM' 
+	  <isNotEmpty prepend="AND" property="GROUP_ID">
+	  		PD_GROUP_ID = #GROUP_ID#
+	  </isNotEmpty>
+	</select>
+	
+	<select id ="selectImPdid"  resultClass="string" parameterClass="java.util.HashMap">
+	  SELECT PD_ID FROM esb_PRODUCT
+	  WHERE PD_TYPE = 'IM' 
+	  <isNotEmpty prepend="AND" property="PD_NAME">
+	  		PD_NAME = #PD_NAME#
+	  </isNotEmpty>
+	</select>
+	
+	<insert id="insertLibStatus" parameterClass="java.util.HashMap">
+		INSERT INTO LIBBATCHUPDATE_STATUS (IM_NAME, IM_IP, DEPLOYID, DEPLOYTYPE) VALUES(#IM_NAME#, #IM_IP#,#DEPLOYID#, #DEPLOYTYPE#)
+	</insert>
+	
+	<select id="selectStatusForzipId" parameterClass="string" resultClass="libbatchupdatestatusVo">
+		select * from (SELECT ROW_NUMBER() OVER () AS row_num, S.*,D.ZIPID FROM LIBBATCHUPDATE_STATUS S, LIBBATCHUPDATE_DEPLOY D 
+		WHERE S.DEPLOYID = D.DEPLOYID
+    				AND S.STATE ='N' AND S.IM_NAME=#IMNAME# AND S.DEPLOYTYPE = 'B'
+    				)t
+					WHERE row_num = 1
+	</select>
+	
+	<select id="realTimeDeploy" parameterClass="java.util.HashMap" resultClass="libbatchupdatestatusVo">
+		select * from (SELECT ROW_NUMBER() OVER () AS row_num, S.*,D.ZIPID FROM LIBBATCHUPDATE_STATUS S, LIBBATCHUPDATE_DEPLOY D 
+		WHERE S.DEPLOYID = D.DEPLOYID
+		<isNotNull prepend="AND" property="STATE">
+			 S.STATE =#STATE#
+		</isNotNull>
+			AND S.IM_NAME=#IMNAME#
+			AND S.DEPLOYID=#DEPLOYID#
+			AND S.DEPLOYTYPE ='R')t
+			where row_num =1
+	</select>
+	
+	<update id="realTimeUpdate" parameterClass="java.util.HashMap">
+		update LIBBATCHUPDATE_STATUS set DEPLOYTYPE = 'R'
+		<dynamic prepend="where">
+		<isNotNull prepend="AND" property="STATE">
+			 STATE =#STATE#
+		</isNotNull>
+			AND IM_NAME=#IMNAME#
+			AND DEPLOYID=#DEPLOYID#
+		</dynamic>
+	</update>
+	
+	<select id="selectLibZip" parameterClass="string" resultClass="libbatchupdatezipVo">
+		SELECT * FROM LIBBATCHUPDATE_ZIP WHERE ZIPID =#ZIPID#
+	</select>
+	
+	<update id="updateForLibStatus" parameterClass="java.util.HashMap">
+		UPDATE LIBBATCHUPDATE_STATUS SET STATE =#STATE_CD#
+		<isNotNull prepend="," property="ERR_LOG">
+			ERR_LOG = #ERR_LOG#
+		</isNotNull>
+		<isNotNull prepend="," property="DEPLOYTYPE">
+			DEPLOYTYPE = #DEPLOYTYPE#
+		</isNotNull>
+		<isNotNull prepend="," property="START_DT">
+			START_DT = CURRENT_TIMESTAMP
+		</isNotNull>
+		<isNotNull prepend="," property="END_DT">
+			END_DT = CURRENT_TIMESTAMP
+		</isNotNull>
+		WHERE IM_NAME=#IMNAME# AND DEPLOYID=#DEPLOYID#
+	</update>
+	
+	<select id="selectLibZipList" resultClass="libbatchupdatezipVo">
+		SELECT Z.*,D.DEPLOYID FROM LIBBATCHUPDATE_DEPLOY D, LIBBATCHUPDATE_ZIP Z
+			WHERE Z.ZIPID = D.ZIPID
+	</select>
+	
+	<select id="selectForZipList" resultClass="libbatchupdatezipVo" parameterClass="java.util.HashMap">
+		SELECT T2.*
+		FROM(SELECT ROW_NUMBER() OVER () AS ROW_NUM, T1.*
+		    	FROM(SELECT  *
+		    			FROM LIBBATCHUPDATE_ZIP
+		    			
+		    			<dynamic prepend="where">
+			    			 <isNotEmpty prepend="and" property="STA_DATE">
+							  	SUBSTR(CHAR(REG_DT),1,10) BETWEEN '$STA_DATE$' AND '$END_DATE$'
+							  </isNotEmpty>
+							  <!-- <isNotEmpty prepend="and" property="DESCRIPTION_ALIAS">
+							  	DESCRIPTION_ALIAS LIKE '%$DESCRIPTION_ALIAS$%'
+							  </isNotEmpty> 
+							  <isNotEmpty prepend="and" property="ZIPNAME">
+							  	ZIPNAME LIKE '%$ZIPNAME$%'
+							  </isNotEmpty> -->
+							  <isNotEmpty prepend="and" property="ZIP_STATE">
+							  	ZIP_STATE = #ZIP_STATE#
+							  </isNotEmpty>
+						  </dynamic>
+				)T1
+				<dynamic prepend="where">
+					<isNotEmpty prepend="and" property="LIBNAME">
+					  	T1.ZIPID IN 
+					  	( SELECT  DISTINCT L.ZIPID  FROM LIBBATCHUPDATE_ZIP Z, LIBBATCHUPDATE_LIB L, LIBBATCHUPDATE_DEPLOY D ,LIBBATCHUPDATE_STATUS S
+                             WHERE Z.ZIPID = L.ZIPID AND Z.ZIPID = D.ZIPID AND D.DEPLOYID = S.DEPLOYID AND
+                             		(L.LIBNAME LIKE '%$LIBNAME$%' OR Z.DESCRIPTION_ALIAS LIKE '%$LIBNAME$%' OR
+                             		Z.ZIPNAME LIKE '%$LIBNAME$%' OR S.IM_NAME LIKE '%$LIBNAME$%')
+                             		)
+                     </isNotEmpty>
+                </dynamic>	
+				)T2
+				
+		<![CDATA[
+		OFFSET $PAGE_INDEX$ ROWS FETCH first $MAX_ROW$ ROW ONLY
+		]]>
+	</select>
+	
+	<select id="selectForZipListCount" resultClass="int">
+		SELECT COUNT(ZIPID) FROM LIBBATCHUPDATE_ZIP
+			<dynamic prepend="where">
+				<isNotEmpty prepend="and" property="LIBNAME">
+					 ZIPID IN 
+					 	( SELECT DISTINCT L.ZIPID FROM LIBBATCHUPDATE_ZIP Z,
+									LIBBATCHUPDATE_LIB L, LIBBATCHUPDATE_DEPLOY D ,LIBBATCHUPDATE_STATUS S
+									WHERE Z.ZIPID = L.ZIPID AND Z.ZIPID = D.ZIPID AND D.DEPLOYID = S.DEPLOYID
+									AND (L.LIBNAME LIKE '%$LIBNAME$%' OR Z.DESCRIPTION_ALIAS LIKE '%$LIBNAME$%' OR
+										Z.ZIPNAME LIKE '%$LIBNAME$%' OR S.IM_NAME LIKE '%$LIBNAME$%')
+								)
+                </isNotEmpty>		
+				<isNotEmpty prepend="and" property="STA_DATE">
+					SUBSTR(CHAR(REG_DT),1,10) BETWEEN '$STA_DATE$' AND '$END_DATE$'
+				</isNotEmpty>
+				<!-- <isNotEmpty prepend="and" property="DESCRIPTION_ALIAS">
+				 	DESCRIPTION_ALIAS LIKE '%$DESCRIPTION_ALIAS$%'
+				 </isNotEmpty>
+				 <isNotEmpty prepend="and" property="ZIPNAME">
+					ZIPNAME LIKE '%$ZIPNAME$%'
+				</isNotEmpty> -->
+				 <isNotEmpty prepend="and" property="ZIP_STATE">
+					ZIP_STATE = #ZIP_STATE#
+				</isNotEmpty>
+			</dynamic>		 
+	</select>
+	
+	<select id="statusbydeployid" resultClass="libbatchdeploystatusVo" parameterClass="java.util.HashMap">
+		SELECT  				DEPLOYID	, MAX(case when LS.STATE = 'N' then CNT else 0 end) AS STATEN
+											, MAX(case when LS.STATE = 'P' then CNT else 0 end) AS STATEP
+											, MAX(case when LS.STATE = 'T' then CNT else 0 end) AS STATET
+											, MAX(case when LS.STATE = 'S' then CNT else 0 end) AS STATES
+											, MAX(case when LS.STATE = 'F' then CNT else 0 end) AS STATEF
+						    			FROM (SELECT STATE, DEPLOYID, COUNT(*) CNT 
+						        					FROM LIBBATCHUPDATE_STATUS
+						        					GROUP BY STATE, DEPLOYID) LS
+                                            WHERE DEPLOYID = (SELECT LD.DEPLOYID 
+                                            					FROM LIBBATCHUPDATE_ZIP LZ, LIBBATCHUPDATE_DEPLOY LD
+																WHERE LZ.ZIPID = LD.ZIPID 
+																		<isNotEmpty prepend="and" property="ZIPID">
+							  												LZ.ZIPID = #ZIPID#
+							  											</isNotEmpty>	
+																)
+                                            GROUP BY DEPLOYID
+	</select>
+	
+	<select id="StatusByImList" resultClass="imanager" parameterClass="map">
+	select t2.*
+		from(
+			select ROW_NUMBER() OVER () AS ROW_NUM, t1.*
+		    	from(
+		        	select PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	    	PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   	    IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID,
+	    	   	    PD.PD_FAVORITE, PD.PD_FIREWALL, PD.PD_STATUS
+        			from   (select case when {fn TIMESTAMPDIFF(SQL_TSI_SECOND, FINAL_MO_REG_DATE, current_timestamp)}  > 180 then '-9'
+						when {fn TIMESTAMPDIFF(SQL_TSI_SECOND,  FINAL_MO_REG_DATE, current_timestamp)} is null then 'null'
+						else '1' end PD_STATUS  , pd1.*
+                  			 from esb_PRODUCT pd1) PD
+                  			, esb_IMANAGER IM
+        					<isNotNull property="USER_ID">
+        					, INDIGO_GROUP_MAPPING UMG
+        					</isNotNull>
+        				where  PD.PD_ID = IM.IM_ID
+        					<isNotNull property="ZIPID" prepend="AND">
+        						 PD.PD_NAME  NOT IN (SELECT IM_NAME 
+														FROM LIBBATCHUPDATE_STATUS
+											       			WHERE DEPLOYID = (SELECT LD.DEPLOYID 
+											        							FROM LIBBATCHUPDATE_ZIP LZ, LIBBATCHUPDATE_DEPLOY LD
+																					WHERE LZ.ZIPID = LD.ZIPID 
+											                             			<isNotEmpty prepend="AND" property="ZIPID">
+																		  				LZ.ZIPID = #ZIPID#
+																		  			</isNotEmpty>
+																		  	)
+							  						)
+				        	</isNotNull>
+        					<isNotNull property="USER_ID" prepend="and">
+        						PD.PD_GROUP_ID = UMG.GROUP_ID
+				        		AND UMG.USER_ID = #USER_ID#
+				        	</isNotNull>
+            				<isNotNull property="GROUP_ID" prepend="and">
+                				PD.PD_GROUP_ID = #GROUP_ID#
+            				</isNotNull>
+            				<isNotNull prepend="and" property="SEARCH_TYPE">
+            					$SEARCH_TYPE$ like '%' ||#SEARCH_STRING#|| '%'
+            				</isNotNull>
+            				<isNotNull property="STATUS_VALUE" prepend="and">
+						    	PD.PD_STATUS = #STATUS_VALUE#
+						    </isNotNull>
+						    AND NOT (IM_VER =  '1.1.3' OR IM_VER =  '1.1.5' OR IM_VER =  '1.2.0' OR IM_VER =  '1.3.0' OR IM_VER =  '1.3.1' OR IM_VER =  '1.3.2')
+           				 order by PD.PD_ORDER, PD.PD_NAME, PD.PD_REG_DATE
+        			)t1 
+			)t2
+		<![CDATA[
+			OFFSET $SKIP_INDEX$ ROWS FETCH first $MAX_ROW$ ROW ONLY
+		]]>
+    </select>
+    
+    <select id="StatusByImToList" resultClass="Integer" parameterClass="map">
+	select count(t2.ROW_NUM)
+		from(
+			select ROW_NUMBER() OVER () AS ROW_NUM, t1.*
+		    	from(
+		        	select PD.PD_ID
+        			from  (select case when {fn TIMESTAMPDIFF(SQL_TSI_SECOND, FINAL_MO_REG_DATE, current_timestamp)}  > 180 then '-9'
+						when {fn TIMESTAMPDIFF(SQL_TSI_SECOND,  FINAL_MO_REG_DATE, current_timestamp)} is null then 'null'
+						else '1' end PD_STATUS  , pd1.*
+                  			 from esb_PRODUCT pd1) PD
+	                  		, esb_IMANAGER IM
+	        				<isNotNull property="USER_ID">
+	        				, INDIGO_GROUP_MAPPING UMG
+	        				</isNotNull>
+        				where  PD.PD_ID = IM.IM_ID
+        					<isNotNull property="USER_ID" prepend="and">
+            					PD.PD_GROUP_ID = UMG.GROUP_ID
+				        		AND UMG.USER_ID = #USER_ID#
+				        	</isNotNull>
+            				<isNotNull property="GROUP_ID" prepend="and">
+                				PD.PD_GROUP_ID = #GROUP_ID#
+            				</isNotNull>
+            				<isNotNull prepend="and" property="SEARCH_TYPE">
+            					$SEARCH_TYPE$ like '%' ||#SEARCH_STRING#|| '%'
+            				</isNotNull>
+            				<isNotNull property="STATUS_VALUE" prepend="and">
+						    	PD.PD_STATUS = #STATUS_VALUE#
+						    </isNotNull>
+						 AND NOT (IM_VER =  '1.1.3' OR IM_VER =  '1.1.5' OR IM_VER =  '1.2.0' OR IM_VER =  '1.3.0' OR IM_VER =  '1.3.1' OR IM_VER =  '1.3.2')
+           				 order by PD.PD_REG_DATE, PD.PD_ORDER, PD.PD_NAME
+        			)t1 
+			)t2
+    </select>
+    
+    <select id="statusbyimName" resultClass="string" parameterClass="java.util.HashMap">
+		SELECT IM_NAME 
+			FROM LIBBATCHUPDATE_STATUS
+       			WHERE DEPLOYID = (SELECT LD.DEPLOYID 
+        							FROM LIBBATCHUPDATE_ZIP LZ, LIBBATCHUPDATE_DEPLOY LD
+										WHERE LZ.ZIPID = LD.ZIPID 
+                             			<isNotEmpty prepend="AND" property="ZIPID">
+							  				LZ.ZIPID = #ZIPID#
+							  			</isNotEmpty>
+							  		)
+	</select>
+	
+	<select id="deployCount" resultClass="Integer" parameterClass="java.util.HashMap">
+		SELECT COUNT(*)
+			FROM LIBBATCHUPDATE_STATUS
+       			WHERE DEPLOYID = (SELECT LD.DEPLOYID 
+        							FROM LIBBATCHUPDATE_ZIP LZ, LIBBATCHUPDATE_DEPLOY LD
+										WHERE LZ.ZIPID = LD.ZIPID 
+                             			<isNotEmpty prepend="and" property="ZIPID">
+							  				LZ.ZIPID = #ZIPID#
+							  			</isNotEmpty>)
+        		AND  (STATE = 'N' OR STATE = 'P' OR STATE = 'F')
+	</select>
+	
+	<select id="selectZipForIMLibList" resultClass="libbatchupdateVo" parameterClass="string">
+		SELECT L.LIBNAME, L.TYPENAME, L.PDTYPE, L.LIBSIZE, L.ZIPID, Z.DESCRIPTION, Z.ZIPNAME
+			FROM LIBBATCHUPDATE_LIB L, LIBBATCHUPDATE_ZIP Z
+					WHERE L.ZIPID = Z.ZIPID
+					AND Z.ZIPID = #value#
+	</select>
+	
+	<select id="selectImName" resultClass="string" parameterClass="string">
+		SELECT IM_NAME 
+			FROM  LIBBATCHUPDATE_DEPLOY D, LIBBATCHUPDATE_ZIP Z, LIBBATCHUPDATE_STATUS S
+						WHERE  D.ZIPID = Z.ZIPID AND D.DEPLOYID =S.DEPLOYID AND D.DEPLOYID =#VALUE#
+	</select>
+	
+	<insert id="insertDeploy" parameterClass="java.util.HashMap">
+		INSERT INTO LIBBATCHUPDATE_DEPLOY (ZIPID, DEPLOYID) VALUES(#ZIPID#, #DEPLOYID#)
+	</insert>
+	
+	<select id="selectDeploy" resultClass="LibBatchUpdateStatusVO" parameterClass="string">
+		SELECT DEPLOYID, Z.DEPLOYTYPE FROM LIBBATCHUPDATE_DEPLOY D RIGHT OUTER JOIN LIBBATCHUPDATE_ZIP Z  
+			ON Z.ZIPID = D.ZIPID WHERE Z.ZIPID = #VALUE#
+	</select>
+	
+	<select id="getPageIManagerListByColumn" resultClass="libbatchupdatedeployimVo" parameterClass="java.util.HashMap">
+		SELECT T2.*
+		FROM(
+			SELECT ROW_NUMBER() OVER () AS ROW_NUM, T1.*
+		    	FROM(
+		        	SELECT  PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	    	PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   	    IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID,
+	    	   	    PD.PD_FAVORITE, PD.PD_FIREWALL, PD.PD_STATUS, S.STATE, S.DEPLOYID, S.ERR_LOG AS ERRLOG, S.DEPLOYTYPE
+        			FROM   (select case when {fn TIMESTAMPDIFF(SQL_TSI_SECOND, FINAL_MO_REG_DATE, current_timestamp)}  > 180 then '-9'
+						when {fn TIMESTAMPDIFF(SQL_TSI_SECOND,  FINAL_MO_REG_DATE, current_timestamp)} is null then 'null'
+						else '1' end PD_STATUS  , pd1.*
+                  			 from esb_PRODUCT pd1) PD
+                  			, esb_IMANAGER IM
+                        , LIBBATCHUPDATE_STATUS S
+        				WHERE  PD.PD_ID = IM.IM_ID
+                      AND PD.PD_NAME = S.IM_NAME
+				        	AND PD.PD_NAME IN(
+                  			 <iterate property="IM_LIST" open="" close = "" conjunction=",">
+            					'$IM_LIST[]$'  					             				
+            				</iterate>
+            					)
+                  		AND S.DEPLOYID =#DEPLOYID#
+                  		<isNotNull prepend="and" property="SEARCH_TYPE">
+            					$SEARCH_TYPE$ like '%' ||#SEARCH_STRING#|| '%'
+            			</isNotNull>
+            			<isNotNull property="STATUS_VALUE" prepend="and">
+						    	PD.PD_STATUS = #STATUS_VALUE#
+						</isNotNull>
+						<isNotEmpty prepend="and" property="STATE">
+						 	S.STATE = #STATE#
+						 </isNotEmpty>
+           				 ORDER BY PD.PD_ORDER, PD.PD_NAME, PD.PD_REG_DATE
+        			)T1 
+			)T2
+	</select>
+
+	<update id="updateDeployImList" parameterClass="java.util.HashMap">
+		UPDATE LIBBATCHUPDATE_STATUS SET STATE ='T'
+			WHERE DEPLOYID =#DEPLOYID# AND IM_NAME=#IM_NAME#
+	</update>
+	
+	<select id="selectForDeployStatus" resultClass="libbatchdeploystatusVo" parameterClass="java.util.HashMap">	
+	SELECT T2.*
+		FROM(SELECT ROW_NUMBER() OVER () AS row_num, T1.*
+		    		FROM(SELECT DS.* , LZ.ZIPNAME,LZ.DESCRIPTION_ALIAS,LZ.ZIPSIZE
+								FROM (SELECT LS.DEPLOYID, LD.REG_DT AS REGDT, LD.ZIPID
+											, MAX(case when LS.STATE = 'N' then CNT else 0 end) AS STATEN
+											, MAX(case when LS.STATE = 'P' then CNT else 0 end) AS STATEP
+											, MAX(case when LS.STATE = 'T' then CNT else 0 end) AS STATET
+											, MAX(case when LS.STATE = 'S' then CNT else 0 end) AS STATES
+											, MAX(case when LS.STATE = 'F' then CNT else 0 end) AS STATEF
+						    				FROM (SELECT STATE, DEPLOYID, COUNT(*) CNT 
+						        							FROM LIBBATCHUPDATE_STATUS
+												         <dynamic prepend="where">
+															<isNotEmpty prepend="and" property="STA_DATE">
+																SUBSTR(CHAR(REG_DT),1,10) BETWEEN '$STA_DATE$' AND '$END_DATE$'
+															</isNotEmpty>
+														</dynamic>
+						        			GROUP BY STATE, DEPLOYID) LS, 
+						      				LIBBATCHUPDATE_DEPLOY LD
+						    				WHERE LS.DEPLOYID =LD.DEPLOYID
+						    				GROUP BY LS.DEPLOYID, LD.REG_DT, LD.ZIPID) DS,
+						 	 		LIBBATCHUPDATE_ZIP LZ
+									WHERE LZ.ZIPID = DS.ZIPID
+											<isNotEmpty prepend="and" property="ZIPNAME">
+												LZ.ZIPNAME LIKE '%$ZIPNAME$%'
+											</isNotEmpty>
+											<isNotEmpty prepend="and" property="DESCRIPTION_ALIAS">
+												LZ.DESCRIPTION_ALIAS LIKE '%$DESCRIPTION_ALIAS$%'
+											</isNotEmpty>
+											<isNotEmpty prepend="and" property="PD_NAME">
+												 DS.DEPLOYID IN
+										            		( SELECT DISTINCT LS.DEPLOYID FROM esb_PRODUCT EP, LIBBATCHUPDATE_STATUS LS
+										            				WHERE EP.PD_NAME = LS.IM_NAME AND EP.PD_TYPE='IM'
+																	 	AND EP.PD_NAME=#PD_NAME#)
+											</isNotEmpty>
+											<isNotEmpty prepend="and" property="PD_ALIAS">
+												 DS.DEPLOYID IN
+										            		( SELECT DISTINCT LS.DEPLOYID FROM esb_PRODUCT EP, LIBBATCHUPDATE_STATUS LS
+										            				WHERE EP.PD_NAME = LS.IM_NAME AND EP.PD_TYPE='IM'
+																	 	AND EP.PD_ALIAS=#PD_ALIAS#)
+											</isNotEmpty>
+												)T1
+					)T2
+		<![CDATA[
+			OFFSET $PAGE_INDEX$ ROWS FETCH first $MAX_ROW$ ROW ONLY
+		]]>
+	</select>
+	
+		<select id ="selectForDeployStatusCount" resultClass="int">
+	SELECT COUNT(DS.DEPLOYID) 
+		FROM (SELECT LS.DEPLOYID, LD.REG_DT AS REGDT, LD.ZIPID
+		    FROM (SELECT STATE, DEPLOYID, COUNT(*) CNT 
+		        			FROM LIBBATCHUPDATE_STATUS
+					          <dynamic prepend="where">
+								<isNotEmpty prepend="and" property="STA_DATE">
+									SUBSTR(CHAR(REG_DT),1,10) BETWEEN '$STA_DATE$' AND '$END_DATE$'
+								</isNotEmpty>
+							</dynamic>
+					 GROUP BY STATE, DEPLOYID) LS, 
+				LIBBATCHUPDATE_DEPLOY LD
+				WHERE LS.DEPLOYID =LD.DEPLOYID
+				GROUP BY LS.DEPLOYID, LD.REG_DT, LD.ZIPID) DS, 
+			LIBBATCHUPDATE_ZIP LZ
+			WHERE LZ.ZIPID = DS.ZIPID
+				<isNotEmpty prepend="and" property="ZIPNAME">
+					LZ.ZIPNAME LIKE '%$ZIPNAME$%'
+				</isNotEmpty>
+				<isNotEmpty prepend="and" property="DESCRIPTION_ALIAS">
+					LZ.DESCRIPTION_ALIAS LIKE '%$DESCRIPTION_ALIAS$%'
+				</isNotEmpty>
+				<isNotEmpty prepend="and" property="PD_NAME">
+					 DS.DEPLOYID IN
+			            		( SELECT DISTINCT LS.DEPLOYID FROM esb_PRODUCT EP, LIBBATCHUPDATE_STATUS LS
+			            				WHERE EP.PD_NAME = LS.IM_NAME AND EP.PD_TYPE='IM'
+										 	AND EP.PD_NAME=#PD_NAME#)
+				</isNotEmpty>
+				<isNotEmpty prepend="and" property="PD_ALIAS">
+					 DS.DEPLOYID IN
+			            		( SELECT DISTINCT LS.DEPLOYID FROM esb_PRODUCT EP, LIBBATCHUPDATE_STATUS LS
+			            				WHERE EP.PD_NAME = LS.IM_NAME AND EP.PD_TYPE='IM'
+										 	AND EP.PD_ALIAS=#PD_ALIAS#)
+				</isNotEmpty>
+	</select>
+	
+	<select id="getPageIManagerTotListByColumn" resultClass="int" parameterClass="java.util.HashMap">
+
+			SELECT	COUNT(*)
+		    	FROM(
+		        	SELECT  PD.PD_ID
+        			FROM   (select case when {fn TIMESTAMPDIFF(SQL_TSI_SECOND, FINAL_MO_REG_DATE, current_timestamp)} > 180 then '-9'
+						when {fn TIMESTAMPDIFF(SQL_TSI_SECOND,  FINAL_MO_REG_DATE, current_timestamp)} is null then 'null'
+						else '1' end PD_STATUS  , pd1.*
+                  			 from esb_PRODUCT pd1) PD
+                  			, esb_IMANAGER IM
+                        , LIBBATCHUPDATE_STATUS S
+                        <isNotNull property="USER_ID">
+        					,INDIGO_GROUP_MAPPING UMG
+        				</isNotNull>
+        				WHERE  PD.PD_ID = IM.IM_ID
+        				<isNotNull property="USER_ID" prepend="and">
+        					PD.PD_GROUP_ID = UMG.GROUP_ID
+				        	AND UMG.USER_ID = #USER_ID#
+				        </isNotNull>
+            			<isNotNull property="GROUP_ID" prepend="and">
+                			PD.PD_GROUP_ID = #GROUP_ID#
+            			</isNotNull> 
+                      AND PD.PD_NAME = S.IM_NAME
+				      AND PD.PD_NAME IN(
+                  	  <iterate property="IM_LIST" open="" close = "" conjunction=",">
+            			'$IM_LIST[]$'  					 
+            			</iterate>)
+                  		AND S.DEPLOYID =#DEPLOYID#
+                  		<isNotNull prepend="and" property="SEARCH_TYPE">
+            					$SEARCH_TYPE$ like '%' ||#SEARCH_STRING#|| '%'
+            			</isNotNull>
+            			<isNotNull property="STATUS_VALUE" prepend="and">
+						    	PD.PD_STATUS = #STATUS_VALUE#
+						</isNotNull>
+						<isNotEmpty prepend="and" property="STATE">
+						 	S.STATE = #STATE#
+						 </isNotEmpty>
+						 AND NOT (IM_VER =  '1.1.3' OR IM_VER =  '1.1.5' OR IM_VER =  '1.2.0' OR IM_VER =  '1.3.0' OR IM_VER =  '1.3.1' OR IM_VER =  '1.3.2')
+           				 ORDER BY PD.PD_ORDER, PD.PD_NAME, PD.PD_REG_DATE
+        			)T1 
+		</select>
+	
+	<select id="zipfileAllDeployStatus" resultClass="libbatchupdatestatusVo" parameterClass="string" >
+		SELECT IM_NAME as IMNAME, DEPLOYID FROM LIBBATCHUPDATE_STATUS
+			WHERE DEPLOYID =#value#
+	</select>
+	
+
+	
+	<update id="deleteZipList" parameterClass="string">
+		UPDATE LIBBATCHUPDATE_ZIP SET ZIP_STATE ='N'
+			WHERE ZIPID= #value#
+	</update>
+	
+	<select id="selectErrLog" parameterClass="java.util.HashMap" resultClass="string">
+		SELECT ERR_LOG FROM LIBBATCHUPDATE_STATUS 
+			WHERE DEPLOYID = #DEPLOYID# AND IM_NAME =#IMNAME# AND STATE='F'
+	</select>
+	
+		<select id="selectDeployStateT" parameterClass="string" resultClass="libbatchupdatestatusVo">
+		SELECT D.DEPLOYID, S.IM_NAME as IMNAME FROM 
+			LIBBATCHUPDATE_ZIP Z, LIBBATCHUPDATE_DEPLOY D, LIBBATCHUPDATE_STATUS S
+				WHERE Z.ZIPID = D.ZIPID AND D.DEPLOYID = S.DEPLOYID AND
+					Z.ZIPID= #ZIPID#  AND S.STATE='T'
+	</select>
+	
+	<update id="updateDeployStateN" parameterClass="string">
+		UPDATE LIBBATCHUPDATE_STATUS SET STATE='N'
+			WHERE DEPLOYID = #DEPLOYID# AND STATE ='T'
+	</update>
+	
+	<select id="getIMListStatus" parameterClass="java.util.HashMap" resultClass="libbatchupdatestatusVo">
+	SELECT
+		IM.IM_IP AS IMIP,IM.IM_VER AS IMVER, PD.PD_STATUS AS PDSTATUS, S.STATE,
+		S.DEPLOYID, S.IM_NAME as IMNAME, S.DEPLOYTYPE, S.START_DT as STARTDT, S.END_DT as ENDDT
+			FROM (select case when {fn TIMESTAMPDIFF(SQL_TSI_SECOND, FINAL_MO_REG_DATE, current_timestamp)}  > 180 then '-9'
+						when {fn TIMESTAMPDIFF(SQL_TSI_SECOND,  FINAL_MO_REG_DATE, current_timestamp)} is null then 'null'
+						else '1' end PD_STATUS  , pd1.*
+                  			 from esb_PRODUCT pd1) PD
+				, esb_IMANAGER IM
+				, LIBBATCHUPDATE_STATUS S
+			WHERE PD.PD_ID = IM.IM_ID AND PD.PD_NAME = IM_NAME AND S.IM_NAME IN(
+			<iterate property="IM_LIST" open="" close="" conjunction=",">
+				'$IM_LIST[]$'
+			</iterate>)
+			AND S.DEPLOYID =#DEPLOYID#
+</select>
+</sqlMap>

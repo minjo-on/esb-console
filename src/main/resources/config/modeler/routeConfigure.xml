@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<componentConfigure type="route" useComponentTag="true" useChild="true">
+	<component type="aggregate" alias="Aggregate" icon="Aggragation.png" tagName="aggregate">
+		<attr name="completionSize" alias="Completion Size" default="10" inputType="number"/>
+		<attr name="strategyRef" alias="Strategy Ref" inputType="ref" option="custombean"/>
+		<attr name="timeout" alias="Timeout" default="30000" inputType="number"/>
+		<expression tagName="correlationExpression">
+			<language name="correlationExpressionLanguage" alias="CorrelationExpression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="correlationExpression" alias="CorrelationExpression"/>
+		</expression>
+		<!-- <expression tagName="completionSize">
+			<language name="completionSizeExpressionLanguage" alias="CompletionSizeExpression Language" default="simple" inputType="select" option="['xpath','simple']"/>
+			<expression name="completionSizeExpression" alias="CompletionSizeExpression" />
+		</expression> -->
+	</component>
+	<component type="choice" alias="Choice" icon="MessageRouter.png" parserClass="com.indigo.web.visualization.modeler.parser.component.route.ChoiceRouteParser" tagName="choice">
+	</component>
+	<!-- <component type="dynamicRouter" alias="DynamicRouter" icon="MessageRouter.png">
+		<attr name="strategyRef" alias="Strategy Ref" inputType="ref" option="custombean"/>
+		<attr name="method" alias="Method"/>
+	</component> -->
+	<component type="filter" alias="Filter" icon="filter_2.png" tagName="filter">
+		<expression>
+			<!-- <language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/> -->
+			<language name="language" alias="Expression Language" default="simple" inputType="extEditor" option="IndigoModeler.view.center.property.WhenLanguageEditor" required="true"/>
+			<expression name="expression" alias="Expression" inputType="extEditor" option="IndigoModeler.view.center.property.WhenExpressionEditor" required="true"/>
+		</expression>
+	</component>
+	<component type="loadBalance" alias="Loadbalance" icon="Loadbalance.png" parserClass="com.indigo.web.visualization.modeler.parser.component.route.LoadBalanceRouteParser" tagName="loadBalance">
+		<attr name="loadbalanceType" alias="Loadbalance Type" default="roundRobin" inputType="select" option="['roundRobin','random','weighted','failover']"/>
+		<attr name="distributionRatio" alias="Distribution Ratio" compare="if(loadbalanceType='weighted')"/>
+		<attr name="distributionRatioDelimiter" alias="Distribution Ratio Delimiter" compare="if(loadbalanceType='weighted')"/>
+		<attr name="exceptions" alias="Exceptions" compare="if(loadbalanceType='failover')"/>
+		<attr name="maximumFailoverAttempts" alias="Maximum Failover Attempts" default="-1" inputType="number" compare="if(loadbalanceType='failover')"/>
+		<attr name="roundRobin" alias="RoundRobin" default="false" inputType="boolean" compare="if(loadbalanceType='failover')"/>
+	</component>
+	<component type="loop" alias="Loop" icon="Sort.png" tagName="loop">
+		<expression>
+			<language name="language" alias="Expression Language" default="constant" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+		<attr name="copy" alias="Copy" default="true" inputType="boolean"/>
+	</component>
+	<component type="multicast" alias="Multicast" icon="PublishSubscribeChannel.png" tagName="multicast">
+		<attr name="strategyRef" alias="Strategy Ref" inputType="ref" option="custombean"/>
+		<attr name="parallelProcessing" alias="Parallel Processing" default="true" inputType="boolean"/>
+		<attr name="timeout" alias="Timeout" default="30000" inputType="number"/>
+	</component>
+	<component type="otherwise" alias="Otherwise" icon="Sort.png" tagName="otherwise">
+	</component>
+	<component type="pipeline" alias="Pipeline" icon="Pipeline.png" tagName="pipeline">
+	</component>
+	<component type="recipientList" alias="RecipientList" icon="ReciplentList.png" parserClass="com.indigo.web.visualization.modeler.parser.component.route.RecipientListParser" tagName="recipientList">
+		<attr name="delimiter" alias="URI Delimiter" default=","/>
+		<attr name="strategyRef" alias="Strategy Ref" inputType="ref" option="custombean"/>
+		<attr name="strategyMethodName" alias="Strategy Method Name"/>
+		<attr name="parallelProcessing" alias="Parallel Processing" default="true" inputType="boolean"/>
+		<attr name="timeout" alias="Timeout" default="30000" inputType="number"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<component type="resequence" alias="Resequence" icon="Resequence.png" parserClass="com.indigo.web.visualization.modeler.parser.component.route.ResequenceRouteParser" tagName="resequence">
+		<attr name="timeout" alias="Timeout" default="30000" inputType="number"/>
+		<attr name="configType" alias="Config Type" default="batch-config" inputType="select" option="['batch-config','stream-config']"/>
+		<attr name="batchSize" alias="Batch Size" default="100" compare="if(configType='batch-config')"/>
+		<attr name="capacity" alias="Capacity" default="5000" compare="if(configType='stream-config')"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<!-- <component type="routingSlip" alias="RoutingSlip" icon="RoutingSlip.png">
+		<attr name="delimiter" alias="URI Delimiter" default=","/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component> -->
+	<component type="sort" alias="Sort" icon="Sort.png" tagName="sort">
+		<attr name="comparatorRef" alias="Comparator Ref" inputType="ref" option="custombean"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<!-- parserClass="com.indigo.web.visualization.modeler.parser.component.route.SplitRouteParser"  -->
+	<component type="split" alias="Split" icon="Splitler.png" tagName="split">
+		<attr name="strategyRef" alias="Strategy Ref" inputType="ref" option="custombean"/>
+		<!-- <attr name="timeout" alias="Timeout" default="30000" type="number"/> -->
+		<expression>
+			<!-- <language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/> -->
+			<language name="language" alias="Expression Language" default="simple" inputType="extEditor" option="IndigoModeler.view.center.property.SplitLanguageEditor" required="true"/>
+			<expression name="expression" alias="Expression" inputType="extEditor" option="IndigoModeler.view.center.property.SplitExpressionEditor" required="true"/>
+		</expression>
+		<!-- <attr name="token" alias="Token" default="," compare="if(language='tokenize')"/>
+		<attr name="xml" alias="Xml" inputType="select" default="false" compare="if(language='tokenize')"/> -->
+	</component>
+	<component type="when" alias="When" icon="Sort.png" tagName="when">
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="extEditor" option="IndigoModeler.view.center.property.WhenLanguageEditor" required="true"/>
+			<expression name="expression" alias="Expression" inputType="extEditor" option="IndigoModeler.view.center.property.WhenExpressionEditor" required="true"/>
+		</expression>
+	</component>
+	<component type="wireTap" alias="WireTap" icon="WireTap.png"  useChild="false" tagName="wireTap">
+		<uri>
+			<component name="component" alias="Protocol" default="direct" inputType="select" option="['direct','direct-vm','seda','vm']"/>
+			<host name="uri" alias="Endpoint URI"/>
+		</uri>
+		<attr name="copy" alias="Copy" default="true" inputType="boolean"/>
+		<!-- <attr name="processorRef" alias="Processor Ref" type="ref" option="custombean"/>
+		<expression>
+			<language name="language" alias="New Exchange Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="New Exchange Expression"/>
+		</expression> -->
+	</component>
+</componentConfigure>

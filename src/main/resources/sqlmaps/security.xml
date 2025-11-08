@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="security">
+
+	<typeAlias alias="securityVO" type="com.indigo.web.agent.vo.SecurityVO"/>
+	
+	<sql id="security_table">INDIGO_SECURITY</sql>
+	
+	<sql id="cols">
+		SECURITY_ID, SECURITY_KEY, USE_KEY, CREATE_DATE
+	</sql>
+
+    <select id="getSecurityList" resultClass="securityVO" parameterClass="map">
+    SELECT T2.*
+		FROM(SELECT ROW_NUMBER() OVER () AS row_num, T1.*
+		    		FROM(
+        select <include refid="cols" />
+        from   <include refid="security_table" />
+        <dynamic prepend="WHERE">
+        	1=1
+        	<isNotEmpty property="use_key">
+        	AND USE_KEY = #use_key#
+        	</isNotEmpty>
+	        <isNotEmpty property="security_id">
+	        AND security_id like '%' ||#security_id#|| '%'
+	        </isNotEmpty>
+        </dynamic>
+        order by create_date
+          )T1
+					)T2
+		<![CDATA[
+			OFFSET $PAGE_INDEX$ ROWS FETCH first $MAX_ROW$ ROW ONLY
+		]]>
+    </select>
+    
+     <select id="getSecurityListCount" resultClass="int" parameterClass="map">
+        select count(*)
+        from   <include refid="security_table" />
+        <dynamic prepend="WHERE">
+        	1=1
+        	<isNotEmpty property="use_key">
+        	AND USE_KEY = #use_key#
+        	</isNotEmpty>
+	        <isNotEmpty property="security_id">
+	        AND security_id like '%' ||#security_id#|| '%'
+	        </isNotEmpty>
+        </dynamic>
+    </select>
+    
+    <insert id="insertSecurity" parameterClass="securityVO">
+    	insert into <include refid="security_table" />
+    	(<include refid="cols" />)
+    	values
+    	(#security_id#, #security_key#, #use_key#, current_timestamp)
+    </insert>
+    
+    <delete id="deleteSecurity">
+		DELETE 
+		FROM <include refid="security_table" /> 
+		<iterate prepend="WHERE security_key IN" open="(" close=")"  conjunction="," >
+		#[]#
+		</iterate> 
+   
+     <!--    delete from <include refid="security_table" />
+        where  security_key = #value# -->
+    </delete>
+    
+    <update id="updateSecurity" parameterClass="securityVO">
+		update <include refid="security_table" />
+		set    use_key = #use_key#, security_id = #security_id#, create_date = current_timestamp
+		where  security_key = #security_key#
+    </update>
+    
+</sqlMap>

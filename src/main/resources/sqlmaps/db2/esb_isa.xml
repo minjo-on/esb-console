@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="esb_isa">
+
+	<typeAlias alias="instancesa" type="com.indigo.web.esb.vo.InstanceSaVO"/>
+	
+	<sql id="sa_table">ADT_SA</sql>
+	<sql id="isa_table">ADT_INSTANCE_SA</sql>
+	<sql id="su_table">ADT_SU</sql>
+	<sql id="ep_table">ADT_ENDPOINT</sql>
+	<sql id="me_table">ADT_MESSAGE_EXCHANGE</sql>
+	
+    <select id="getInstanceSaList" parameterClass="map" resultClass="instancesa">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT ROWNUM ROW_NUM, S.*
+        		FROM   (
+				        select SA.DESCRIPTION SA_NAME, 
+				               ISA.ID_INSTANCE_SA, ISA.ID_SA, ISA.START_DATE,
+				               ISA.END_DATE, ISA.STATE, ISA.CORRELATIONID
+				        from   <include refid="sa_table" /> SA, <include refid="isa_table" /> ISA
+				        where  SA.ID_SA = ISA.ID_SA
+				        and    ISA.START_DATE between #FROM_DATE# and #TO_DATE#
+				        <isNotEqual property="ID_SA" compareValue="0">
+				        and  SA.ID_SA = #ID_SA#
+				        </isNotEqual>
+				        <isNotEqual property="STATE" compareValue="0">
+				        and  ISA.STATE = #STATE#
+				        </isNotEqual>
+				        <isNotNull property="START_DATE">
+				        	order by START_DATE
+				        </isNotNull>
+				        <isNotNull property="END_DATE">
+				        	order by END_DATE
+				        </isNotNull>
+				        <isNotNull property="CORRELATIONID">
+				        	order by CORRELATIONID
+				        </isNotNull>
+        				) S
+				) Z
+		<![CDATA[
+		WHERE  ROW_NUM > #SKIP_INDEX#
+		AND    ROW_NUM <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+    </select>
+    
+    <select id="getInstanceSaCount" parameterClass="map" resultClass="int">
+        select count(*)
+        from   <include refid="sa_table" /> SA, <include refid="isa_table" /> ISA
+        where  SA.ID_SA = ISA.ID_SA
+        and    ISA.START_DATE between #FROM_DATE# and #TO_DATE#
+        <isNotEqual property="ID_SA" compareValue="0">
+        and  SA.ID_SA = #ID_SA#
+        </isNotEqual>
+        <isNotEqual property="STATE" compareValue="0">
+        and  ISA.STATE = #STATE#
+        </isNotEqual>
+    </select>
+    
+    <select id="getSaStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+		select ID_SA, STATE, count(*) CNT
+		from   <include refid="isa_table" />
+		where  START_DATE between #FROM_DATE# and #TO_DATE#
+		group by ID_SA, STATE
+    </select>
+    
+</sqlMap>

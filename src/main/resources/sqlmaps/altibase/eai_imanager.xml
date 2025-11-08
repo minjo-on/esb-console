@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_imanager">
+
+	<typeAlias alias="imanager" type="com.indigo.web.agent.vo.EaiIManagerVO"/>
+
+	<sql id="product_table">esb_PRODUCT</sql>
+	<sql id="imanager_table">esb_IMANAGER</sql>
+	<sql id="group_mapping">INDIGO_GROUP_MAPPING</sql>
+
+	<sql id="imanager_cols">
+	    IM_ID, IM_IP, IM_PORT, IM_OS, IM_INFO, IM_VER, IM_COMMUNICATION
+	</sql>
+	
+	<!-- <cacheModel type="MEMORY" id="TreeCasheMEM">
+		<flushOnExecute statement="esb_product.updateFavorite"/>
+		<flushOnExecute statement="esb_imanager.deleteIManager"/>
+		<flushOnExecute statement="esb_imanager.insertIManager"/>
+		<flushOnExecute statement="esb_product.updateProductByIManager"/>
+		<flushInterval minutes="30"/>
+	</cacheModel> -->
+	
+    <select id="getIManagerListByColumn" resultClass="imanager" parameterClass="map">
+        select PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	   PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID, 
+	    	   PD.PD_FAVORITE, PD.PD_FIREWALL,IM.IM_COMMUNICATION
+        from   <include refid="product_table" /> PD, <include refid="imanager_table" /> IM
+        where  PD.PD_ID = IM.IM_ID
+        <isNotNull prepend="and" property="PD_TYPE">
+        PD_TYPE = #PD_TYPE#
+        </isNotNull>
+        <isNotNull prepend="and" property="PD_NAME">
+        PD_NAME = #PD_NAME#
+        </isNotNull>
+        <isNotNull prepend="and" property="IM_IP">
+        IM_IP = #IM_IP#
+        </isNotNull>
+        <isNotNull prepend="and" property="PD_ID">
+        PD_ID = #PD_ID#
+        </isNotNull>
+        <isNotNull property="GROUP_ID" prepend="and">
+        	PD.PD_GROUP_ID = #GROUP_ID#
+        </isNotNull>
+        order by PD.PD_REG_DATE, PD.PD_ORDER, PD.PD_NAME
+    </select>
+    
+    <select id="getIManagerFavoriteList" resultClass="imanager" parameterClass="map">
+        select PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	   PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID,
+	    	   PD.PD_FAVORITE, PD.PD_FIREWALL
+        from   <include refid="product_table" /> PD, 
+        	   <include refid="imanager_table" /> IM
+        	   <isNotNull property="USER_ID">
+        	   ,<include refid="group_mapping" /> UMG
+        	   </isNotNull>
+        where  PD.PD_ID = IM.IM_ID
+        	<isNotNull property="USER_ID" prepend="and">
+        		PD.PD_GROUP_ID = UMG.GROUP_ID
+        		AND UMG.USER_ID = #USER_ID#
+        	</isNotNull>
+        	<isNotNull property="GROUP_ID" prepend="and">
+        		PD.PD_GROUP_ID = #GROUP_ID#
+        	</isNotNull>
+        	<isNotNull property="FAVORITE" prepend="and">
+        		PD.PD_FAVORITE = #FAVORITE#
+        	</isNotNull>
+        	order by PD.PD_ORDER, PD.PD_ALIAS, PD.PD_REG_DATE
+    </select>
+    
+	<select id="getPageIManagerListByColumn" resultClass="imanager" parameterClass="map">
+	select t2.*
+		from(
+			select ROWNUM row_num, t1.*
+		    	from(
+		        	select PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	    	PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   	    IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID,
+	    	   	    PD.PD_FAVORITE, PD.PD_FIREWALL, PD.PD_STATUS
+        			from   (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',null,'null','1') PD_STATUS , pd1.*
+                  			 from <include refid="product_table" /> pd1) PD
+                  			, <include refid="imanager_table" /> IM
+        					<isNotNull property="USER_ID">
+        					, <include refid="group_mapping" /> UMG
+        					</isNotNull>
+        				where  PD.PD_ID = IM.IM_ID
+        					<isNotNull property="USER_ID" prepend="and">
+        						PD.PD_GROUP_ID = UMG.GROUP_ID
+				        		AND UMG.USER_ID = #USER_ID#
+				        	</isNotNull>
+				        	<isNotNull property="GROUP_ID" prepend="and">
+							<iterate prepend="PD.PD_GROUP_ID IN" property="GROUP_ID" open="(" conjunction="," close=")">
+							 #GROUP_ID[]#
+							</iterate>
+							</isNotNull>
+            				<!-- <isNotNull property="GROUP_ID" prepend="and">
+                				PD.PD_GROUP_ID = #GROUP_ID#
+            				</isNotNull> -->
+            				<isNotNull prepend="and" property="im_ver">
+            					IM.im_ver like '%' ||#im_ver#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="pd_name">
+            					PD.pd_name like '%' ||#pd_name#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="im_ip">
+            					IM.im_ip like '%' ||#im_ip#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="pd_alias">
+            					PD.pd_alias like '%' ||#pd_alias#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="im_port">
+            					IM.im_port like '%' ||#im_port#|| '%'
+            				</isNotNull>
+            				<isNotNull property="STATUS_VALUE" prepend="and">
+						    	PD.PD_STATUS = #STATUS_VALUE#
+						    </isNotNull>
+           				 order by PD.PD_ORDER, PD.PD_NAME, PD.PD_REG_DATE
+        			)t1 
+			)t2
+			<isNotNull property="SKIP_INDEX">
+				<![CDATA[
+					where  row_num > #SKIP_INDEX#
+					AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+				]]>
+			</isNotNull>
+    </select>
+    
+    <select id="getPageIManagerTotListByColumn" resultClass="int">
+	select count(t2.row_cnt) as TOT_CNT
+		from(
+			select ROWNUM as row_cnt, t1.*
+		    	from(
+		        	select PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	    	PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   	    IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID,
+	    	   	    PD.PD_FAVORITE, PD.PD_FIREWALL, PD.PD_STATUS
+        			from  (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',null,'null','1') PD_STATUS , pd1.*
+                  			 from <include refid="product_table" /> pd1) PD
+	                  		, <include refid="imanager_table" /> IM
+	        				<isNotNull property="USER_ID">
+	        				, <include refid="group_mapping" /> UMG
+	        				</isNotNull>
+        				where  PD.PD_ID = IM.IM_ID
+        					<isNotNull property="USER_ID" prepend="and">
+            					PD.PD_GROUP_ID = UMG.GROUP_ID
+				        		AND UMG.USER_ID = #USER_ID#
+				        	</isNotNull>
+				        	<isNotNull property="GROUP_ID" prepend="and">
+							<iterate prepend="PD.PD_GROUP_ID IN" property="GROUP_ID" open="(" conjunction="," close=")">
+							 #GROUP_ID[]#
+							</iterate>
+							</isNotNull>
+            				<!-- <isNotNull property="GROUP_ID" prepend="and">
+                				PD.PD_GROUP_ID = #GROUP_ID#
+            				</isNotNull> -->
+            				<isNotNull prepend="and" property="im_ver">
+            					IM.im_ver like '%' ||#im_ver#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="pd_name">
+            					PD.pd_name like '%' ||#pd_name#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="im_ip">
+            					IM.im_ip like '%' ||#im_ip#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="pd_alias">
+            					PD.pd_alias like '%' ||#pd_alias#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="im_port">
+            					IM.im_port like '%' ||#im_port#|| '%'
+            				</isNotNull>
+            				<isNotNull property="STATUS_VALUE" prepend="and">
+						    	PD.PD_STATUS = #STATUS_VALUE#
+						    </isNotNull>
+           				 order by PD.PD_REG_DATE, PD.PD_ORDER, PD.PD_NAME
+        			)t1 
+			)t2
+    </select>
+    
+    <insert id="insertIManager" parameterClass="imanager">
+        insert into <include refid="imanager_table" />
+            (<include refid="imanager_cols" />)
+        values
+            (#im_id#, #im_ip#, #im_port#, #im_os#, #im_info#, #im_ver#, #im_communication#)
+    </insert>
+
+    <insert id="updateIManager" parameterClass="imanager">
+        update <include refid="imanager_table" />
+        set    IM_IP   = #im_ip# ,
+               IM_PORT = #im_port# ,
+               IM_OS   = #im_os# ,
+               IM_VER  = #im_ver# ,
+               IM_INFO = #im_info#,
+               IM_COMMUNICATION = #im_communication#
+        where  IM_ID = #im_id#
+    </insert>
+
+    <delete id="deleteIManager" parameterClass="string">
+        delete from <include refid="imanager_table" />
+        where  IM_ID = #value#
+    </delete>
+
+</sqlMap>

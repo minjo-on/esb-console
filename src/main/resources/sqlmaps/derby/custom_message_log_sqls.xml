@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="custom_message_log">
+	<select id="selectAllCustomMessageLogs" resultClass="HashMap"
+		parameterClass="HashMap">
+		<![CDATA[
+		SELECT SEQ, TX_ID, IF_ID, START_DATE, END_DATE, RESULT_CODE, ESB_HOST, (END_DATE-START_DATE) TURNAROUND_DT
+		FROM TRACE_MESSAGE
+		]]>
+
+		<dynamic prepend="where">
+			<isNotNull property="STATUS_INFO">
+				<isNotEqual property="STATUS_INFO" compareValue=""
+					prepend="and">
+					<![CDATA[
+						RESULT_CODE like '%'|| #STATUS_INFO# ||'%' 
+					]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_STA_DATE">
+				<isNotEqual property="SEARCH_STA_DATE" compareValue=""
+					prepend="and">
+				<![CDATA[
+		    		START_DATE >= to_char( to_timestamp( #SEARCH_STA_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' )   
+				]]>
+				</isNotEqual>
+			</isNotNull>
+			
+			<isNotNull property="SEARCH_END_DATE">
+				<isNotEqual property="SEARCH_END_DATE" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	to_char( to_timestamp( #SEARCH_END_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' ) >=  END_DATE  
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_IF_ID">
+				<isNotEqual property="SEARCH_IF_ID" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	IF_ID like '%'|| #SEARCH_IF_ID# ||'%'    
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_TX_ID">
+				<isNotEqual property="SEARCH_TX_ID" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	TX_ID like '%'|| #SEARCH_TX_ID# ||'%'    
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+		</dynamic>
+	</select>
+</sqlMap>

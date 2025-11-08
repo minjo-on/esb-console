@@ -1,0 +1,33 @@
+[
+	{
+		"role": "NORMAL",
+		"accessController": [
+/* 			{"controllerName":"ALL", "cmd":"ALL"} */
+			{"controllerName":"/imsMessageTraceController", "cmd":"ALL"},
+			{"controllerName":"/imsStatisticsController", "cmd":"ALL"},
+			{"controllerName":"/indigoCodeController", "cmd":"ALL"},
+			{"controllerName":"/indexController", "cmd":"ALL"},
+			{"controllerName":"/queueController", "cmd":"indigomq-jmx-list,indigomq-broker-jmx-list,view-MainMenuQueue"},
+			{"controllerName":"/EsbiServiceController", "cmd":"resource-list"},
+			{"controllerName":"/productController", "cmd":"monitoring-product,select-product-orderzero,pj-list"},
+			{"controllerName":"/agentListManagementController", "cmd":"agent-menu-tree,im-group"},
+			{"controllerName":"/jmxController", "cmd":"esb-server-name-list"},
+			{"controllerName":"/layoutController", "cmd":"ALL"},
+			{"controllerName":"/indigoUserController", "cmd":"check-user-password,user-popup,user-update,user-update-passwd"},
+			{"controllerName":"/interfaceController", "cmd":"get-if-mgmt-type"},
+			{"controllerName":"/confMenuController", "cmd":"load_version_info"}
+		]
+	},
+	{
+		"role":"MANAGER",
+		"accessController":[
+			{"controllerName":"ALL", "cmd":"ALL"}
+		]
+	},
+	{
+		"role":"SUPER",
+		"accessController":[
+			{"controllerName":"ALL", "cmd":"ALL"}
+		]
+	}
+]

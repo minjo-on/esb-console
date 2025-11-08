@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="indigo_user">
+
+	<typeAlias alias="user_info" type="com.indigo.web.mgmt.vo.IndigoUserVO"/>
+	
+	<sql id="user_table">INDIGO_USER</sql>
+	
+	<sql id="user_cols">
+	    USER_ID, LOGIN_ID, LOGIN_PW, USER_NAME, USER_EMAIL, USER_TEL, USER_SMS_YN, USER_INFO, USER_GRP, AUTH_GRP, PW_CHANGE_YN, FINAL_LOGIN_DATE, PW_LAST_CHANGE_DTTM,
+	    PW_ERR_CNT, USER_STATUS, ALLOWED_TML_IP
+	</sql>
+	
+    <select id="getUserInfoByCol" parameterClass="map" resultClass="user_info">
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="where">
+        	<isNotNull property="LOGIN_ID" prepend="and">
+        		LOGIN_ID = #LOGIN_ID#
+        	</isNotNull>
+        	<isNotNull property="USER_ID" prepend="and">
+        		USER_ID = #USER_ID#
+        	</isNotNull>
+        </dynamic>
+    </select>
+     <select id="getUserList" resultClass="user_info">
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        where   
+        LOGIN_ID NOT LIKE 'ADMIN'
+        order by USER_ID
+    </select>
+    <select id="getUserPageList" resultClass="user_info">
+       select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+        <isNotEqual property="AUTH_GRP" compareValue="SUPER">
+            LOGIN_ID = #LOGIN_ID#
+        </isNotEqual>
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getUserList2" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+        
+          USER_GRP like '%' ||#USER_ID#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getPopupIdList" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+          USER_GRP like '%' ||#GROUP_ID#|| '%'
+          AND
+          LOGIN_ID like '%' ||#SEARCH_ID#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getPopupNameList" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+          USER_GRP like '%' ||#USER_ID#|| '%'
+          AND
+          USER_NAME like '%' ||#SEARCH_NAME#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getUserCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+          USER_GRP like '%' ||#USER_ID#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    
+    <select id="getTotalCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="user_table" />
+        <dynamic prepend="where">
+        <isNotEqual property="AUTH_GRP" compareValue="SUPER">
+            LOGIN_ID = #LOGIN_ID#
+        </isNotEqual>
+        </dynamic>
+    </select>
+    
+    <insert id="insertUser" parameterClass="user_info">
+    	insert into <include refid="user_table" />
+    	(<include refid="user_cols" />)
+    	values
+		(#user_id#, #login_id#, #login_pw#, #user_name:VARCHAR:NO_ENTRY#, #user_email:VARCHAR:NO_ENTRY#, #user_tel:VARCHAR:NO_ENTRY#, #user_sms_yn:VARCHAR:NO_ENTRY#, 
+    	 #user_info:VARCHAR:NO_ENTRY#, #user_grp:VARCHAR:NO_ENTRY#, #auth_grp:VARCHAR:NO_ENTRY#, #pw_change_yn:VARCHAR:NO_ENTRY#, #final_login_date:TIMESTAMP#, CURRENT_TIMESTAMP, 0, 'A', #allowed_tml_ip:VARCHAR:NO_ENTRY#)
+    </insert>
+    
+    <update id="updateUser" parameterClass="user_info">
+        update <include refid="user_table" />
+        set    LOGIN_PW	   = #login_pw:VARCHAR:NO_ENTRY#	,
+        	   USER_NAME   = #user_name:VARCHAR:NO_ENTRY#   , 
+       	       USER_EMAIL  = #user_email:VARCHAR:NO_ENTRY#  , 
+       	       USER_TEL    = #user_tel:VARCHAR:NO_ENTRY#    , 
+       	       USER_SMS_YN = #user_sms_yn:VARCHAR:NO_ENTRY# , 
+       	       USER_INFO   = #user_info:VARCHAR:NO_ENTRY#   , 
+       	       USER_GRP    = #user_grp:VARCHAR:NO_ENTRY#    , 
+       	       AUTH_GRP    = #auth_grp:VARCHAR:NO_ENTRY#	,
+       	       ALLOWED_TML_IP  	  = #allowed_tml_ip:VARCHAR:NO_ENTRY#,
+       	       USER_STATUS 		  = #user_status:VARCHAR:NO_ENTRY#,
+       	       PW_ERR_CNT		  = #pw_err_cnt:INTEGER#
+       	where  USER_ID  = #user_id:VARCHAR:NO_ENTRY#
+    </update>
+    
+    <delete id="deleteUser" parameterClass="string">
+        delete from <include refid="user_table" />
+        where  USER_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+    
+    <update id="updateLoginPassword" parameterClass="map">
+        update <include refid="user_table" />
+        set		LOGIN_PW = #LOGIN_PW:VARCHAR:NO_ENTRY#,
+				PW_LAST_CHANGE_DTTM = SYSDATE
+       	where	USER_ID  = #USER_ID:VARCHAR:NO_ENTRY#
+    </update>
+    
+    <update id="updateLoginDate" parameterClass="map">
+        update <include refid="user_table" />
+        set    FINAL_LOGIN_DATE = #FINAL_LOGIN_DATE:TIMESTAMP#   
+       	where  USER_ID  = #USER_ID:VARCHAR:NO_ENTRY#
+    </update>
+    
+    <update id="updatePwChangeYN" parameterClass="map">
+        update <include refid="user_table" />
+        set    PW_CHANGE_YN = #PW_CHANGE_YN:VARCHAR:NO_ENTRY#   
+       	where  USER_ID  = #USER_ID:VARCHAR:NO_ENTRY#
+    </update>
+    <select id="getUserIdList" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        where LOGIN_ID like '%' ||#id#|| '%'
+        <dynamic>
+          <isNotEqual property="AUTH_GRP" compareValue="SUPER" prepend="and">
+            LOGIN_ID = #LOGIN_ID#
+          </isNotEqual>
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getUserNameList" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        where USER_NAME like '%' ||#user_name#|| '%'
+        <dynamic>
+          <isNotEqual property="AUTH_GRP" compareValue="SUPER" prepend="and">
+            LOGIN_ID = #LOGIN_ID#
+          </isNotEqual>
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getUserGroupList" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        where USER_GRP like '%' ||#user_group#|| '%'
+        <dynamic>
+          <isNotEqual property="AUTH_GRP" compareValue="SUPER" prepend="and">
+            LOGIN_ID = #LOGIN_ID#
+          </isNotEqual>
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getUserAuthList" resultClass="user_info" parameterClass="java.util.Map">
+    	select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS  row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+         <dynamic prepend="WHERE">
+			<iterate property="TARGET_AUTH_GRP" open="AUTH_GRP IN (" close = ")" conjunction=",">
+            	#TARGET_AUTH_GRP[]#
+            </iterate>
+		</dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getAllUserAuthList" resultClass="user_info" parameterClass="java.util.Map">
+    	select <include refid="user_cols" />
+        from   <include refid="user_table" />
+       	<dynamic prepend="WHERE">
+			<iterate property="TARGET_AUTH_GRP" open="AUTH_GRP IN (" close = ")" conjunction=",">
+            	#TARGET_AUTH_GRP[]#  					 
+            </iterate>
+		</dynamic>
+    </select>
+     <select id="getUserIdCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="user_table" />
+        where LOGIN_ID like '%' ||#id#|| '%'
+         <dynamic>
+            <isNotEqual property="AUTH_GRP" compareValue="SUPER" prepend="and">
+            LOGIN_ID = #LOGIN_ID#
+        	</isNotEqual>
+        </dynamic>
+    </select>
+    <select id="getUserNameCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="user_table" />
+        where USER_NAME like '%' ||#user_name#|| '%'
+         <dynamic>
+            <isNotEqual property="AUTH_GRP" compareValue="SUPER">
+            LOGIN_ID = #LOGIN_ID#
+        	</isNotEqual>
+        </dynamic>
+    </select>
+    <select id="getUserGroupCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="user_table" />
+        where USER_GRP like '%' ||#user_group#|| '%'
+         <dynamic>
+          <isNotEqual property="AUTH_GRP" compareValue="SUPER">
+            LOGIN_ID = #LOGIN_ID#
+          </isNotEqual>
+        </dynamic>
+    </select>
+    <select id="getFindAddUser" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+          USER_GRP is NULL OR	
+          USER_GRP not like '%' ||#user_group#|| '%' AND
+          LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getFindAddIdUser" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+        	LOGIN_ID like '%' ||#SEARCH_ID#|| '%' AND
+         	USER_GRP not like '%' ||#user_group#|| '%' AND
+         	LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getFindAddNameUser" resultClass="user_info" parameterClass="java.util.Map">
+    select t2.* from(
+		    select ROW_NUMBER() over (ORDER BY login_id) AS row_num, t1.* from(  
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+        USER_NAME like '%' ||#SEARCH_NAME#|| '%' AND
+        USER_GRP not like '%' ||#user_group#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getFindAddUserCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="user_table" />
+         <dynamic prepend="WHERE">
+           USER_GRP is NULL OR
+           USER_GRP not like '%' ||#user_group#|| '%' AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    <select id="getFindAddIdCnt" resultClass="int" parameterClass="java.util.Map">   
+        select count(*)
+        from   <include refid="user_table" />
+         <dynamic prepend="WHERE">
+          LOGIN_ID like '%' ||#SEARCH_ID#|| '%' AND
+          USER_GRP not like '%' ||#user_group#|| '%' AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    <select id="getFindAddNameCnt" resultClass="int" parameterClass="java.util.Map">   
+        select count(*)
+        from   <include refid="user_table" />
+         <dynamic prepend="WHERE">
+        USER_NAME like '%' ||#SEARCH_NAME#|| '%' AND
+          USER_GRP not like '%' ||#user_group#|| '%' AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    <update id="addUser" parameterClass="java.util.Map">
+        update <include refid="user_table" />
+        set  USER_GRP = #GROUP_ID#
+        where  LOGIN_ID = #IOGIN_ID#
+    </update>
+    <select id="findUser" resultClass="user_info" parameterClass="string">
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+         LOGIN_ID = #loginId#  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    <select id="getUserListIdCnt" resultClass="int" parameterClass="java.util.Map">   
+        select count(*)
+        from   <include refid="user_table" />
+         <dynamic prepend="WHERE">
+          LOGIN_ID like '%' ||#SEARCH_ID#|| '%' AND
+          USER_GRP like '%' ||#user_group#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    <select id="getUserListNameCnt" resultClass="int" parameterClass="java.util.Map">   
+        select count(*)
+        from   <include refid="user_table" />
+         <dynamic prepend="WHERE">
+        USER_NAME like '%' ||#SEARCH_NAME#|| '%' AND
+          USER_GRP like '%' ||#user_group#|| '%'  AND
+        LOGIN_ID NOT LIKE 'ADMIN'
+        </dynamic>
+    </select>
+    <select id="getUserListByGroupId" resultClass="user_info" parameterClass="string">
+        select <include refid="user_cols" />
+        from   <include refid="user_table" />
+        <dynamic prepend="WHERE">
+         USER_GRP LIKE '%' ||#value#|| '%'
+        </dynamic>
+    </select>
+    <update id="updateUserStatus" parameterClass="user_info">
+        update <include refid="user_table" />
+        set    USER_STATUS = #user_status:VARCHAR:NO_ENTRY#,
+              PW_ERR_CNT = #pw_err_cnt#
+       	where  USER_ID  = #user_id:VARCHAR:NO_ENTRY#
+    </update>
+    
+</sqlMap>

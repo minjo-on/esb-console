@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="esb_me">
+
+	<typeAlias alias="msgexchange" type="com.indigo.web.esb.vo.MsgExchangeVO"/>
+	
+	<sql id="sa_table">ADT_SA</sql>
+	<sql id="isa_table">ADT_INSTANCE_SA</sql>
+	<sql id="su_table">ADT_SU</sql>
+	<sql id="ep_table">ADT_ENDPOINT</sql>
+	<sql id="me_table">ADT_MESSAGE_EXCHANGE</sql>
+	
+    <select id="getMeList" parameterClass="map" resultClass="msgexchange">
+        select SA.DESCRIPTION SA_NAME,
+               ME.ID_ME, ME.ID_ENDPOINT_SOURCE, ME.ID_ENDPOINT_TARGET,
+               ME.ID_INSTANCE_SA, ME.ID, ME.PATTERN, ME.STATE, ME.ME_DATE,
+               (select SU_NAME 
+               	from <include refid="su_table" /> TO_SU, <include refid="ep_table" /> TO_END
+               	where TO_SU.ID_SU = TO_END.ID_SU
+               	and TO_END.ID_ENDPOINT = ME.ID_ENDPOINT_SOURCE) FROM_SU_NAME,
+               	(select SU_NAME 
+               	from <include refid="su_table" /> FROM_SU, <include refid="ep_table" /> FROM_END
+               	where FROM_SU.ID_SU = FROM_END.ID_SU
+               	and FROM_END.ID_ENDPOINT = ME.ID_ENDPOINT_TARGET) TO_SU_NAME 
+        from   <include refid="sa_table" /> SA, <include refid="isa_table" /> ISA, <include refid="me_table" /> me
+        where  SA.ID_SA = ISA.ID_SA
+        and    ISA.ID_INSTANCE_SA = ME.ID_INSTANCE_SA
+        <isNotEqual property="ID_INSTANCE_SA" compareValue="0">
+        and  ME.ID_INSTANCE_SA = #ID_INSTANCE_SA#
+        </isNotEqual>
+        order by ME.ID_ME
+    </select>
+    
+    <select id="getMeInfo" parameterClass="string" resultClass="msgexchange">
+        select *
+        from   <include refid="me_table" />
+        where  ID_ME = #value#
+    </select>
+    
+    <select id="getMessageListByJoin" parameterClass="map" resultClass="msgexchange">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT ROWNUM ROW_NUM, S.*
+        		FROM   (
+    					SELECT SA.ID_SA, SA.SA_NAME SA_NAME, SA.DESCRIPTION SA_DESC,
+				    	       FROM_SU.SU_NAME FROM_SU_NAME,
+				    	       FROM_EP.NAMESPACE FROM_NAMESPACE,
+				    	       FROM_EP.SERVICE_NAME FROM_SERVICE_NAME,
+				    	       FROM_EP.ENDPOINT_NAME FROM_ENDPOINT_NAME,
+				    	       TO_SU.SU_NAME TO_SU_NAME,
+				    	       TO_EP.NAMESPACE TO_NAMESPACE,
+				    	       TO_EP.SERVICE_NAME TO_SERVICE_NAME,
+				    	       TO_EP.ENDPOINT_NAME TO_ENDPOINT_NAME,
+				    	       ME.ME_DATE, ME.ID, ME.ID_ME, ME.PATTERN, ME.STATE,
+				    	       ME.ID_ENDPOINT_SOURCE, ME.ID_ENDPOINT_TARGET
+				        FROM   <include refid="sa_table" /> SA, <include refid="isa_table" /> ISA, <include refid="me_table" /> ME,
+				               <include refid="ep_table" /> FROM_EP, <include refid="su_table" /> FROM_SU, 
+				               <include refid="ep_table" /> TO_EP, <include refid="su_table" /> TO_SU
+				        WHERE  ME.ID_INSTANCE_SA = ISA.ID_INSTANCE_SA
+				        AND    ISA.ID_SA = SA.ID_SA
+				        AND    ME.ID_ENDPOINT_SOURCE = FROM_EP.ID_ENDPOINT(+)
+				        AND    FROM_EP.ID_SU = FROM_SU.ID_SU(+)
+				        AND    ME.ID_ENDPOINT_TARGET = TO_EP.ID_ENDPOINT(+)
+				        AND    TO_EP.ID_SU = TO_SU.ID_SU(+)
+				        AND    (SA.ID_SA = #ID_SA# OR '0' = #ID_SA#)
+				        AND    (FROM_SU.ID_SU = #ID_SU# OR TO_SU.ID_SU = #ID_SU# OR '0' = #ID_SU#)
+				        AND    (ME.ID_ENDPOINT_SOURCE = #ID_EP# OR ME.ID_ENDPOINT_TARGET = #ID_EP# OR '0' = #ID_EP#)
+				        AND    ME.ME_DATE BETWEEN #FROM_DATE# AND #TO_DATE#
+				        AND    (ME.STATE = #STATE# OR '0' = #STATE#)
+				        <isNotNull prepend="ID_SA">
+				        	ORDER BY ID_SA
+				        </isNotNull>
+				        <isNotNull prepend="ID">
+				        	ORDER BY ID
+				        </isNotNull>
+				        <isNotNull prepend="ME_DATE">
+				        	ORDER BY ME_DATE
+				        </isNotNull>
+        				) S
+				) Z
+		<![CDATA[
+		WHERE  ROW_NUM > #SKIP_INDEX#
+		AND    ROW_NUM <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+    </select>
+    
+    <select id="getMessageCountByJoin" parameterClass="map" resultClass="int">
+    	SELECT COUNT(*)
+        FROM   <include refid="sa_table" /> SA, <include refid="isa_table" /> ISA, <include refid="me_table" /> ME,
+               <include refid="ep_table" /> FROM_EP, <include refid="su_table" /> FROM_SU, 
+               <include refid="ep_table" /> TO_EP, <include refid="su_table" /> TO_SU
+        WHERE  ME.ID_INSTANCE_SA = ISA.ID_INSTANCE_SA
+        AND    ISA.ID_SA = SA.ID_SA
+        AND    ME.ID_ENDPOINT_SOURCE = FROM_EP.ID_ENDPOINT(+)
+        AND    FROM_EP.ID_SU = FROM_SU.ID_SU(+)
+        AND    ME.ID_ENDPOINT_TARGET = TO_EP.ID_ENDPOINT(+)
+        AND    TO_EP.ID_SU = TO_SU.ID_SU(+)
+        AND    (SA.ID_SA = #ID_SA# OR '0' = #ID_SA#)
+        AND    (FROM_SU.ID_SU = #ID_SU# OR TO_SU.ID_SU = #ID_SU# OR '0' = #ID_SU#)
+        AND    (ME.ID_ENDPOINT_SOURCE = #ID_EP# OR ME.ID_ENDPOINT_TARGET = #ID_EP# OR '0' = #ID_EP#)
+        AND    ME.ME_DATE BETWEEN #FROM_DATE# AND #TO_DATE#
+        AND    (ME.STATE = #STATE# OR '0' = #STATE#)
+    </select>
+    
+</sqlMap>

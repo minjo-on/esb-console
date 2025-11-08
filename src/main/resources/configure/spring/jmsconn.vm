@@ -1,0 +1,17 @@
+<beans>
+#foreach( $jmsconn in $data )
+	<bean id="$jmsconn.jmsConnectionId" class="$jmsconn.jmsConnectionClazz" destroy-method="$jmsconn.jmsConnectionDestory">
+        <description><![CDATA[$jmsconn.description]]></description>
+        <property name="connectionFactory">
+            <bean class="$jmsconn.connectionFactoryClazz">
+                <property name="brokerURL">
+                    <value>$jmsconn.brokerURL</value>
+                </property>
+            </bean>
+        </property>
+        <property name="maxConnections" value="$jmsconn.maxConnections"/>
+        <property name="idleTimeout" value="$jmsconn.idleTimeout"/>
+        <property name="maximumActive" value="$jmsconn.maximumActive"/>
+    </bean>
+#end
+</beans>

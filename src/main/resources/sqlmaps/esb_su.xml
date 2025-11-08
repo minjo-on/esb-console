@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="esb_su">
+
+	<typeAlias alias="unit" type="com.indigo.web.esb.vo.UnitVO"/>
+	<typeAlias alias="suStateVo" type="com.indigo.web.esb.vo.SuStateVO"/>
+	
+	<sql id="sa_table">ADT_SA</sql>
+	<sql id="isa_table">ADT_INSTANCE_SA</sql>
+	<sql id="su_table">ADT_SU</sql>
+	<sql id="ep_table">ADT_ENDPOINT</sql>
+	<sql id="me_table">ADT_MESSAGE_EXCHANGE</sql>
+	
+    <select id="getUnitList" parameterClass="map" resultClass="unit">
+        select SU.ID_SU, SU.ID_SA, SU.SU_NAME, SU.COMPONENT_NAME, SA.SA_NAME
+        from   <include refid="su_table" /> SU, <include refid="sa_table" /> SA
+        where  SU.ID_SA = SA.ID_SA
+        <isNotEqual property="ID_SA" compareValue="0">
+        and  SA.ID_SA = #ID_SA#
+        </isNotEqual>
+        <isNotNull property="SU_NAME">
+        order by SU_NAME
+        </isNotNull>
+        <isNotNull property="ID_SU">
+        order by ID_SU
+        </isNotNull>
+        <isNotNull property="ID_SA">
+        order by ID_SA
+        </isNotNull>
+    </select>
+    
+    <select id="getUnitCount" parameterClass="map" resultClass="int">
+        select count(*)
+        from   <include refid="su_table" /> SU, <include refid="sa_table" /> SA
+        where  SU.ID_SA = SA.ID_SA
+        <isNotEqual property="ID_SA" compareValue="0">
+        and  SA.ID_SA = #ID_SA#
+        </isNotEqual>
+    </select>
+    
+    <select id="getSendUnitCount" parameterClass="map" resultClass="java.util.HashMap">
+        select SU.SU_NAME, count(ME.ID_ENDPOINT_SOURCE) SEND_CNT
+        from   <include refid="su_table" /> SU,
+               <include refid="ep_table" /> EP,
+               <include refid="me_table" /> ME
+        where  SU.ID_SU = EP.ID_SU
+        and    EP.ID_ENDPOINT = ME.ID_ENDPOINT_SOURCE
+        and    ME.ME_DATE between #FROM_DATE# and #TO_DATE#
+        group by SU.SU_NAME
+    </select>
+    
+    <select id="getRecvUnitCount" parameterClass="map" resultClass="java.util.HashMap">
+        select SU.SU_NAME, count(ME.ID_ENDPOINT_SOURCE) RECV_CNT
+        from   <include refid="su_table" /> SU,
+               <include refid="ep_table" /> EP,
+               <include refid="me_table" /> ME
+        where  SU.ID_SU = EP.ID_SU
+        and    EP.ID_ENDPOINT = ME.ID_ENDPOINT_TARGET
+        and    ME.ME_DATE between #FROM_DATE# and #TO_DATE#
+        group by SU.SU_NAME
+    </select>
+    
+    <select id="getSuStateCnt" parameterClass="map" resultClass="suStateVo">
+		SELECT SU_NAME, ID_SU,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0))
+		    +MAX(DECODE(STATE,'DONE',CNT,0))
+		    +MAX(DECODE(STATE,'ACTIVE',CNT,0))
+		    +MAX(DECODE(STATE,'ERROR',CNT,0)) STATESUM
+		FROM
+		(
+			select Nvl(t1.cnt, 0) cnt, state, su.su_name, su.id_su
+			from <include refid="su_table" /> su,(
+				select count(me.state) CNT, me.state, ep.id_su
+			    from <include refid="me_table" /> me, 
+			  	     <include refid="ep_table" /> ep 
+			  	where me.id_endpoint_target = ep.id_endpoint
+				  and me.me_date between #FROM_DATE# and #TO_DATE#
+				group by me.state, ep.id_su
+			 )t1
+			 where t1.id_su(+) = su.id_su
+			 <isNotEmpty property="SU_ID">
+	        	  and su.id_su = #SU_ID#
+	         </isNotEmpty>
+		) A
+		group by SU_NAME, ID_SU
+		order by STATESUM desc
+    </select>
+    
+    <select id="getSuHHStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+    	select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'hh24') as HH, su.id_su
+		from <include refid="me_table" /> me, 
+			 <include refid="ep_table" /> ep, 
+		 	   	 <include refid="su_table" /> su
+		where me.id_endpoint_target = ep.id_endpoint
+				 and ep.id_su = su.id_su
+			 and me.me_date between #FROM_DATE# and #TO_DATE#
+			 <isNotEmpty property="SU_ID">
+        	 and su.id_su = #SU_ID#
+        	 </isNotEmpty>
+		group by STATE, to_char(me.me_date,'hh24'), su.id_su
+	 </select>
+	 
+	 <select id="getSuDDStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+    	select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'DD') as DD, su.id_su
+		from <include refid="me_table" /> me, 
+			 <include refid="ep_table" /> ep, 
+		 	   	 <include refid="su_table" /> su
+		where me.id_endpoint_target = ep.id_endpoint
+				 and ep.id_su = su.id_su
+			 and me.me_date between #FROM_DATE# and #TO_DATE#
+			 <isNotEmpty property="SU_ID">
+        	 and su.id_su = #SU_ID#
+        	 </isNotEmpty>
+		group by STATE, to_char(me.me_date,'DD'), su.id_su
+	 </select>
+	 
+	 <select id="getSuStateCntGroupByHH" parameterClass="map" resultClass="java.util.HashMap">
+    	select A.HH,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR
+		from(
+			select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'hh24') as HH
+			from <include refid="me_table" /> me, 
+				 <include refid="ep_table" /> ep, 
+		  	   	 <include refid="su_table" /> su
+			where me.id_endpoint_target = ep.id_endpoint
+		 		 and ep.id_su = su.id_su
+				 and me.me_date between #FROM_DATE# and #TO_DATE#
+				 <isNotEmpty property="SU_ID">
+        		 and su.id_su = #SU_ID#
+        		 </isNotEmpty>
+			group by STATE, to_char(me.me_date,'hh24')
+		)A
+		group by A.HH
+    </select>
+    
+     <select id="getSuStateCntGroupByDD" parameterClass="map" resultClass="java.util.HashMap">
+    	select A.DD,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR
+		from(
+			select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'DD') as DD
+			from <include refid="me_table" /> me, 
+				 <include refid="ep_table" /> ep, 
+		  	   	 <include refid="su_table" /> su
+			where me.id_endpoint_target = ep.id_endpoint
+		 		 and ep.id_su = su.id_su
+				 and me.me_date between #FROM_DATE# and #TO_DATE#
+				 <isNotEmpty property="SU_ID">
+        		 and su.id_su = #SU_ID#
+        		 </isNotEmpty>
+			group by STATE, to_char(me.me_date,'DD')
+		)A
+		group by A.DD
+    </select>
+</sqlMap>

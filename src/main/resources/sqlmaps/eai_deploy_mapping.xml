@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_deploy_mapping">
+
+	<typeAlias alias="deploy_mapping" type="com.indigo.web.agent.vo.EaiIServiceVO"/>
+	
+	<resultMap id="iservice_file_map" class="com.indigo.web.agent.vo.EaiIServiceVO">
+	    <result property="is_file_name"  column="IS_FILE_NAME" jdbcType="VARCHAR" />
+	    <result property="is_file" column="IS_FILE" jdbcType="BLOB" />
+	</resultMap>
+	
+	<sql id="deploy_mapping_table">esb_DEPLOY_MAPPING</sql>
+	<sql id="iservice_table">esb_ISERVICE</sql>
+	<sql id="iservice_ver_table">esb_ISERVICE_VER</sql>
+	
+	<sql id="join_cols">
+	    DM.IN_ID, DM.IS_ID, 
+	    SV.FO_ID, SV.IS_ORDER, SV.IS_FILE_NAME, SV.IS_INFO, SV.IS_USE_VER, 
+	    IV.IS_VER, IV.IS_REG_DATE, IV.IS_FILE_SIZE
+	</sql>
+
+    <select id="getDeployMappingList" resultClass="deploy_mapping" parameterClass="map">
+        select <include refid="join_cols" />
+        from   <include refid="deploy_mapping_table" /> DM, 
+               <include refid="iservice_table" /> SV, 
+               <include refid="iservice_ver_table" /> IV
+        where  DM.IS_ID = SV.IS_ID
+        and    SV.IS_ID = IV.IS_ID
+        and    SV.IS_USE_VER = IV.IS_VER
+        and    DM.IN_ID = #IN_ID#
+        <isNotNull property="IS_ID">
+        and    SV.IS_ID = #IS_ID#
+        </isNotNull>
+    </select>
+    
+    <select id="getDeployMappingListWithClss" resultMap="iservice_file_map" parameterClass="map">
+        select SV.IS_FILE_NAME, IV.IS_FILE 
+        from   <include refid="deploy_mapping_table" /> DM, 
+               <include refid="iservice_table" /> SV, 
+               <include refid="iservice_ver_table" /> IV
+        where  DM.IS_ID = SV.IS_ID
+        and    SV.IS_ID = IV.IS_ID
+        and    SV.IS_USE_VER = IV.IS_VER
+        and    DM.IN_ID = #IN_ID#
+    </select>
+    
+    <insert id="insertDeployMapping" parameterClass="map">
+        insert into <include refid="deploy_mapping_table" />
+            (IN_ID, IS_ID)
+        values
+            (#IN_ID#, #IS_ID#)
+    </insert>
+    
+    <delete id="deleteDeployMapping" parameterClass="map">
+        delete from <include refid="deploy_mapping_table" />
+        where  IN_ID = #IN_ID#
+        and    IS_ID = #IS_ID#
+    </delete>
+    
+    <delete id="deleteDeployMappings" parameterClass="String">
+        delete from <include refid="deploy_mapping_table" />
+        where  IN_ID = #value#
+    </delete>
+    
+</sqlMap>

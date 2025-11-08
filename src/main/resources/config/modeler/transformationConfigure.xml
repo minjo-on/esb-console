@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<componentConfigure type="transformation" useComponentTag="true">
+	<component type="convertBodyTo" tagName="convertBodyTo" alias="ConvertBodyTo" icon="MessageTranslator.png">
+		<attr name="type" alias="Type" inputType="select" default="java.lang.String" option="['java.lang.String','org.w3c.dom.Document']"/>
+		<attr name="charset" alias="Charset"/>
+	</component>
+	<component type="enrich" tagName="enrich" alias="Enrich" icon="Enrich.png">
+		<uri>
+			<component name="component" alias="Protocol" default="direct" inputType="protocol" option="IndigoModeler.view.center.property.BridgePointProtocolEditor" required="true"/>
+			<host name="uri" alias="Endpoint URI" inputType="bridge" option="IndigoModeler.view.center.property.BridgePointEndpointURIEditor" required="true"/>
+		</uri>
+		<attr name="strategyRef" alias="Strategy Ref" inputType="ref" option="custombean"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<!-- <component type="inOnly" tagName="inOnly" alias="InOnly" icon="MessageTranslator.png">
+		<attr name="uri" alias="URI"/>
+	</component>
+	<component type="inOut" tagName="inOut" alias="InOut" icon="MessageTranslator.png">
+		<attr name="uri" alias="URI"/>
+	</component> -->
+	<component type="marshal" tagName="marshal" alias="Marshal" icon="MessageTranslator.png" parserClass="com.indigo.web.visualization.modeler.parser.component.transformation.MarshalComponentParser">
+		<attr name="type" alias="Type" default="csv" inputType="select" option="['csv','json','base64','zipFile']"/>
+		<attr name="delimiter" alias="Delimiter" default="," compare="if(type='csv')"/>
+		<attr name="useMaps" alias="UseMaps" default="true" inputType="boolean" compare="if(type='csv')"/>
+	</component>
+	<component type="pollEnrich" tagName="pollEnrich" alias="PollEnrich" icon="pollEnrich.png">
+		<attr name="uri" alias="URI"/>
+		<attr name="timeout" alias="Timeout" default="30000" inputType="number"/>
+	</component>
+	<component type="removeHeader" tagName="removeHeader" alias="RemoveHeader" icon="MessageTranslator.png">
+		<attr name="headerName" alias="Header Name"/>
+	</component>
+	<component type="removeHeaders" tagName="removeHeaders" alias="RemoveHeaders" icon="MessageTranslator.png">
+		<attr name="pattern" alias="Pattern"/>
+		<attr name="excludePattern" alias="Exclude Pattern"/>
+	</component>
+	<component type="removeProperty" tagName="removeProperty" alias="RemoveProperty" icon="MessageTranslator.png">
+		<attr name="propertyName" alias="Property Name"/>
+	</component>
+	<component type="setBody" tagName="setBody" alias="SetBody" icon="MessageTranslator.png">
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<component type="setExchangePattern" tagName="setExchangePattern" alias="SetExchangePattern" icon="MessageTranslator.png">
+		<attr name="pattern" alias="Pattern" inputType="select" option="['InOut','InOnly','OutOnly','RobustInOnly','RobustOutOnly','InOptionalOut','OutOptionalIn']"/>
+	</component>
+	<!-- <component type="setFaultBody" tagName="setFaultBody" alias="SetFaultBody" icon="MessageTranslator.png">
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component> -->
+	<component type="setHeader" tagName="setHeader" alias="SetHeader" icon="MessageTranslator.png">
+		<attr name="headerName" alias="Header Name"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="constant" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<component type="setOutHeader" tagName="setOutHeader" alias="SetOutHeader" icon="MessageTranslator.png">
+		<attr name="headerName" alias="Header Name"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<component type="setProperty" tagName="setProperty" alias="SetProperty" icon="MessageTranslator.png">
+		<attr name="propertyName" alias="Property Name"/>
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<!-- <component type="transform" tagName="transform" alias="Transform" icon="MessageTranslator.png">
+		<expression>
+			<language name="language" alias="Expression Language" default="simple" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component> -->
+	<component type="unmarshal" tagName="unmarshal" alias="Unmarshal" icon="MessageTranslator.png" parserClass="com.indigo.web.visualization.modeler.parser.component.transformation.MarshalComponentParser">
+		<attr name="type" alias="Type" default="csv" inputType="select" option="['csv','json','base64','zipFile']"/>
+		<attr name="delimiter" alias="Delimiter" default="," compare="if(type='csv')"/>
+		<attr name="useMaps" alias="UseMaps" default="true" inputType="boolean" compare="if(type='csv')"/>
+	</component>
+</componentConfigure>

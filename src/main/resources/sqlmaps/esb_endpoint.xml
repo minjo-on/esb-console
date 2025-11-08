@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="esb_endpoint">
+
+	<typeAlias alias="endpoint" type="com.indigo.web.esb.vo.EndpointVO"/>
+	<typeAlias alias="epStateVo" type="com.indigo.web.esb.vo.EPStateVO"/>
+	
+	<sql id="sa_table">ADT_SA</sql>
+	<sql id="isa_table">ADT_INSTANCE_SA</sql>
+	<sql id="su_table">ADT_SU</sql>
+	<sql id="ep_table">ADT_ENDPOINT</sql>
+	<sql id="me_table">ADT_MESSAGE_EXCHANGE</sql>
+	
+    <select id="getEndpointInfo" parameterClass="string" resultClass="endpoint">
+        select *
+        from   <include refid="ep_table" />
+        where  ID_ENDPOINT = #value#
+    </select>
+    
+    <select id="getEndPointJoinSu" parameterClass="String" resultClass="endpoint">
+    	select *
+        from   <include refid="ep_table" /> EP, <include refid="su_table"/> SU
+        where EP.ID_SU = SU.ID_SU  
+        and ID_ENDPOINT = #value#
+    </select>
+    
+    <select id="getEndpointList" parameterClass="map" resultClass="endpoint">
+        select SA.ID_SA, SA.DESCRIPTION SA_NAME, SU.SU_NAME, 
+               EP.ID_ENDPOINT, EP.ID_SU, EP.SERVICE_NAME, EP.INTERFACE_NAME, 
+               EP.ENDPOINT_NAME, EP.NAMESPACE, EP.TYPE, EP.COMPONENT_NAME, EP.FINAL_YN
+        from   <include refid="ep_table" /> EP, <include refid="su_table" /> SU, <include refid="sa_table" /> SA
+        where  SA.ID_SA = SU.ID_SA
+        and    SU.ID_SU = EP.ID_SU
+        <isNotEqual property="ID_SA" compareValue="0">
+        and  SA.ID_SA = #ID_SA#
+        </isNotEqual>
+        <isNotEqual property="ID_SU" compareValue="0">
+        and  SU.ID_SU = #ID_SU#
+        </isNotEqual>
+        <isNotNull property="ENDPOINT_NAME">
+        order by ENDPOINT_NAME
+        </isNotNull>
+        <isNotNull property="SERVICE_NAME">
+        order by SERVICE_NAME
+        </isNotNull>
+        <isNotNull property="ID_ENDPOINT">
+        order by ID_ENDPOINT
+        </isNotNull>
+        
+    </select>
+    
+    <select id="getEndpointCount" parameterClass="map" resultClass="int">
+        select count(*)
+        from   <include refid="ep_table" /> EP, <include refid="su_table" /> SU, <include refid="sa_table" /> SA
+        where  SA.ID_SA = SU.ID_SA
+        and    SU.ID_SU = EP.ID_SU
+        <isNotEqual property="ID_SA" compareValue="0">
+        and  SA.ID_SA = #ID_SA#
+        </isNotEqual>
+        <isNotEqual property="ID_SU" compareValue="0">
+        and  SU.ID_SU = #ID_SU#
+        </isNotEqual>
+    </select>
+ 
+    <select id="getEPStateCnt" parameterClass="map" resultClass="epStateVo">
+    
+	    SELECT EP_NAME, ID_EP,
+				MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+				MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+				MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+				MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR,
+				MAX(DECODE(STATE,'COMPLETE',CNT,0))
+			    +MAX(DECODE(STATE,'DONE',CNT,0))
+			    +MAX(DECODE(STATE,'ACTIVE',CNT,0))
+			    +MAX(DECODE(STATE,'ERROR',CNT,0)) STATESUM
+			FROM
+			(
+	      select  Nvl(t1.cnt, 0) cnt, state, ep2.endpoint_name  as EP_NAME, ep2.id_endpoint as ID_EP
+	      from <include refid="ep_table" /> ep2,(
+	        select count(me.state) CNT, me.state, ep.endpoint_name, ep.id_endpoint 
+	        from <include refid="me_table" /> me, 
+				 <include refid="ep_table" /> ep
+	        where me.id_endpoint_source = ep.id_endpoint
+	           and me.me_date between #FROM_DATE# and #TO_DATE#
+	        GROUP BY me.state, ep.endpoint_name, ep.id_endpoint)t1
+	        
+	      where t1.id_endpoint(+) = ep2.id_endpoint
+	      <isNotEmpty property="EP_ID">
+        	 	 and ep2.id_endpoint = #EP_ID#
+          </isNotEmpty>
+		  ) A
+		GROUP BY EP_NAME, ID_EP
+		order by STATESUM desc
+    </select>
+    
+    
+ 	<select id="getEPHHStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+    	select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'hh24') as HH, ep.id_endpoint
+		from <include refid="me_table" /> me, 
+			 <include refid="ep_table" /> ep
+		where me.id_endpoint_source = ep.id_endpoint
+			 and me.me_date between #FROM_DATE# and #TO_DATE#
+			 <isNotEmpty property="EP_ID">
+	       	 and ep.id_endpoint = #EP_ID#
+	       	 </isNotEmpty>
+		group by STATE, to_char(me.me_date,'hh24'), ep.id_endpoint
+	</select>
+	
+	<select id="getEPDDStateCnt" parameterClass="map" resultClass="java.util.HashMap">
+    	select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'DD') as DD, ep.id_endpoint
+		from <include refid="me_table" /> me, 
+			 <include refid="ep_table" /> ep
+		where me.id_endpoint_source = ep.id_endpoint
+			 and me.me_date between #FROM_DATE# and #TO_DATE#
+			 <isNotEmpty property="EP_ID">
+	       	 and ep.id_endpoint = #EP_ID#
+	       	 </isNotEmpty>
+		group by STATE, to_char(me.me_date,'DD'), ep.id_endpoint
+	</select>
+    
+    <select id="getEPStateCntGroupByHH" parameterClass="map" resultClass="java.util.HashMap">
+    	select HH,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR
+		from(
+			select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'hh24') as HH
+			from <include refid="me_table" /> me, 
+				 <include refid="ep_table" /> ep
+			where me.id_endpoint_source = ep.id_endpoint
+		 		 and me.me_date between #FROM_DATE# and #TO_DATE#
+		 		 <isNotEmpty property="EP_ID">
+	        	 and ep.id_endpoint = #EP_ID#
+	        	 </isNotEmpty>
+			group by STATE, to_char(me.me_date,'hh24')
+		)A
+		group by HH
+    </select>
+    
+     <select id="getEPStateCntGroupByDD" parameterClass="map" resultClass="java.util.HashMap">
+    	select DD,
+			MAX(DECODE(STATE,'COMPLETE',CNT,0)) COMPLETE,
+			MAX(DECODE(STATE,'DONE',CNT,0)) DONE,
+			MAX(DECODE(STATE,'ACTIVE',CNT,0)) ACTIVE,
+			MAX(DECODE(STATE,'ERROR',CNT,0)) ERROR
+		from(
+			select count(me.STATE) CNT, me.STATE, to_char(me.me_date,'DD') as DD
+			from <include refid="me_table" /> me, 
+				 <include refid="ep_table" /> ep
+			where me.id_endpoint_source = ep.id_endpoint
+		 		 and me.me_date between #FROM_DATE# and #TO_DATE#
+		 		 <isNotEmpty property="EP_ID">
+	        	 and ep.id_endpoint = #EP_ID#
+	        	 </isNotEmpty>
+			group by STATE, to_char(me.me_date,'DD')
+		)A
+		group by DD
+    </select>
+    
+    <update id="updateFinalYn" parameterClass="map">
+		update <include refid="ep_table" />
+		set    FINAL_YN = #FINAL_YN# 
+		where  ID_ENDPOINT = #ID_ENDPOINT#
+    </update>
+    
+</sqlMap>

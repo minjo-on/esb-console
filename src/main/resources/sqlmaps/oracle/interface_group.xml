@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="interface_group">
+	
+	<typeAlias alias="interfaceVO" type="com.indigo.web.esb.vo.ESBInterfaceVO"/>
+	<sql id="group_table">INTERFACE_INFO</sql>
+
+	<select id="getGroupCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="group_table" />
+    </select>
+   
+   <select id="getTotalIdCnt" resultClass="int" parameterClass="java.util.Map">
+   		select count(*)
+   		from <include refid="group_table" />
+   		<![CDATA[
+   		WHERE if_id like '%' ||#id#|| '%'
+   		]]> 
+   </select>
+   
+	<select id="getGroupList2" resultClass="interfaceVO">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="group_table" />
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getInterfaceIdList" resultClass="interfaceVO" parameterClass="java.util.Map">
+    	select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="group_table" />
+        <dynamic prepend="WHERE">
+        	if_id like '%' ||#id#|| '%'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getTotalNameCnt" resultClass="int" parameterClass="java.util.Map">
+    	select count(*)
+   		from <include refid="group_table" />
+   		<![CDATA[
+   		WHERE if_name like '%' ||#name#|| '%'
+   		]]> 
+    </select>
+    <select id="getInterfaceNameList" resultClass="interfaceVO" parameterClass="java.util.Map">
+    	select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="group_table" />
+        <dynamic prepend="WHERE">
+        	if_name like '%' ||#name#|| '%'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <delete id="deleteInterface" parameterClass="String">
+    	delete from <include refid="group_table" /> 
+		where IF_ID = #if_id# 
+    </delete>
+	<insert id="insertInterface" parameterClass="interfaceVO">
+		insert into <include refid="group_table" />
+		values(#if_id#,#if_name#,#linkage_pattern#,#manager#,#use_case#)
+	</insert>
+	
+	<select id="selectInterface" resultClass="interfaceVO" parameterClass="String">
+		select * from <include refid="group_table" /> where if_id = #if_id#
+	</select>
+	
+	<update id="updateInterface" parameterClass="interfaceVO">
+		update <include refid="group_table" /> set 
+		if_id = #if_id#, if_name = #if_name#, linkage_pattern = #linkage_pattern#, manager = #manager#, use_case = #use_case#
+		where if_id = #if_id#
+	</update>
+	
+</sqlMap>

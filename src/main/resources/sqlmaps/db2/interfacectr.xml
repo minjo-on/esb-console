@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="interfacectr">
+
+	<typeAlias alias="if_user_info" type="com.indigo.web.esb.vo.InterfaceCtrVO" />
+	<typeAlias alias="if_code_mapping_info" type="com.indigo.web.esb.vo.InterfaceCtrCodeVO" />
+	
+	<sql id="if_user_cols">
+		CTR_ID, CTR_NAME, CTR_COMPANY, CTR_POSITION, CTR_PHONENUM, CTR_SERVICEKEY, CTR_REG_DATE, CTR_IP
+	</sql>
+	<sql id="ifcode_info_cols">
+		IFCTR_CODE_MAPPING_NO, CTR_ID, CODE_ID, REG_TIME
+	</sql>
+
+
+	<select id="getUserList" resultClass="if_user_info" parameterClass="java.util.Map">
+		SELECT T2.* FROM(
+			SELECT ROW_NUMBER() OVER () AS row_num, T1.* FROM(
+				SELECT
+				<include refid="if_user_cols" />
+				FROM
+					ESB_INTERFACECTR
+					<dynamic prepend="where">
+			        	<isNotNull property="ctr_id" prepend="and">
+			        		CTR_ID = #ctr_id#
+			        	</isNotNull>
+			        	<isNotNull property="ctr_name" prepend="and">
+			        		CTR_NAME like '%' ||#ctr_name#|| '%'
+			        	</isNotNull>
+			        	<isNotNull property="ctr_servicekey" prepend="and">
+			        		CTR_SERVICEKEY like '%' ||#ctr_servicekey#|| '%'
+			        	</isNotNull>
+			        </dynamic>
+					)T1
+			)T2
+		<![CDATA[
+		OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+		]]> 
+	</select>
+
+	<select id="getUserListCnt" resultClass="int" parameterClass="java.util.Map">
+		select count(*)
+		FROM
+			ESB_INTERFACECTR
+			<dynamic prepend="where">
+				<isNotNull property="CTR_ID" prepend="and">
+					CTR_ID = #ctr_id#
+				</isNotNull>
+				<isNotNull property="CTR_NAME" prepend="and">
+					CTR_NAME like '%' ||#ctr_name#|| '%'
+				</isNotNull>
+				<isNotNull property="ctr_servicekey" prepend="and">
+			        CTR_SERVICEKEY like '%' ||#ctr_servicekey#|| '%'
+			    </isNotNull>
+			</dynamic>
+	</select>
+	
+	<select id="getIfCtrUser" resultClass="if_user_info" parameterClass="String">
+		SELECT
+				<include refid="if_user_cols" />
+				FROM
+					ESB_INTERFACECTR
+				WHERE
+					CTR_ID = #ctr_id#
+	</select>
+	
+	<insert id="insertUser" parameterClass="if_user_info">
+    	insert into ESB_INTERFACECTR
+    	(<include refid="if_user_cols" />)
+    	values
+    	(#ctr_id#, #ctr_name#, #ctr_company:VARCHAR:NO_ENTRY#, #ctr_position:VARCHAR:NO_ENTRY#, #ctr_phonenum:VARCHAR:NO_ENTRY#, 
+    	#ctr_servicekey#, CURRENT_TIMESTAMP, #ctr_ip:VARCHAR:NO_ENTRY#)
+    </insert>
+    
+    <update id="updateUser" parameterClass="if_user_info">
+        update ESB_INTERFACECTR
+        set    CTR_NAME	   = #ctr_name:VARCHAR:NO_ENTRY#   , 
+       	       CTR_COMPANY  = #ctr_company:VARCHAR:NO_ENTRY#  , 
+       	       CTR_POSITION    = #ctr_position:VARCHAR:NO_ENTRY#    , 
+       	       CTR_PHONENUM = #ctr_phonenum:VARCHAR:NO_ENTRY# , 
+       	       CTR_SERVICEKEY   = #ctr_servicekey:VARCHAR:NO_ENTRY#   , 
+       	       CTR_REG_DATE    = CURRENT_TIMESTAMP, 
+       	       CTR_IP    = #ctr_ip:VARCHAR:NO_ENTRY#      
+       	where  CTR_ID  = #ctr_id:VARCHAR:NO_ENTRY#
+    </update>
+    
+    <delete id="deleteUser" parameterClass="string">
+        delete from ESB_INTERFACECTR
+        where  CTR_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+    
+    <select id="checkUser" resultClass="int" parameterClass="String">
+		select count(*)
+		FROM
+			ESB_INTERFACECTR
+		WHERE  CTR_ID = #value:VARCHAR:NO_ENTRY#
+	</select>
+	
+	<select id="getIfCodeList" resultClass="if_code_mapping_info" parameterClass="java.util.Map">
+		SELECT T2.* FROM(
+			SELECT ROW_NUMBER() OVER () AS row_num, T1.* FROM(
+				SELECT M.*,C.CODE_NAME, C.USE_YN 
+				FROM ESB_IFCTR_CODE_MAPPING M LEFT OUTER JOIN INDIGO_CODE C ON M.CODE_ID = C.CODE_ID 
+				WHERE M.CTR_ID = #ctr_id#
+				)T1
+			)T2
+		<![CDATA[
+		OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+		]]> 
+	</select>
+	
+	<select id="getIfCodeListCnt" resultClass="int" parameterClass="String">
+		SELECT COUNT(*)
+		FROM 
+			ESB_IFCTR_CODE_MAPPING M LEFT OUTER JOIN INDIGO_CODE C ON M.CODE_ID = C.CODE_ID
+		WHERE
+			M.CTR_ID = #ctr_id#
+	</select>
+	
+	<insert id="insertIfCodeInfo" parameterClass="java.util.Map">
+    	INSERT INTO ESB_IFCTR_CODE_MAPPING
+    	(<include refid="ifcode_info_cols" />)
+    	VALUES
+    	(NEXT VALUE FOR IFCTR_CODE_MAPPING_NO_SEQ, 
+	    	#ctr_id#, 
+	    	#code_id#,
+	    	CURRENT_TIMESTAMP)
+    </insert>
+    
+    <delete id="deleteIfCodeInfo" parameterClass="string">
+        delete from ESB_IFCTR_CODE_MAPPING
+        where  CTR_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+</sqlMap>

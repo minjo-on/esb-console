@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+		PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+		"http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="indigo_report">
+
+	<typeAlias alias="reportVO" type="com.indigo.web.report.vo.ReportVO"/>
+
+	<!-- Report Total -->
+	<select id="selectReportListTotal" resultClass="int" parameterClass="HashMap">
+		SELECT COUNT(*) AS total_count
+		FROM INDIGO_REPORT
+		<dynamic prepend="WHERE">
+			<isNotNull property="search_type">
+				<!-- search_type이 지정되었을 때 -->
+				<isEqual prepend="AND" property="search_type" compareValue="title">
+					TITLE
+				</isEqual>
+				<isEqual prepend="AND" property="search_type" compareValue="department">
+					DEPARTMENT
+				</isEqual>
+				<isEqual prepend="AND" property="search_type" compareValue="user_id">
+					USER_ID
+				</isEqual>
+				<isEqual prepend="AND" property="search_type" compareValue="contact_number">
+					CONTACT_NUMBER
+				</isEqual>
+				<isEqual prepend="AND" property="search_type" compareValue="receive_email">
+					RECEIVE_EMAIL
+				</isEqual>
+				<isNotNull property="search_val">
+					like '%' ||#search_val#|| '%'
+				</isNotNull>
+			</isNotNull>
+			<!-- search_type이 지정되지 않았을 때 -->
+			<isNull property="search_type">
+				<isNotNull property="search_val" prepend="OR">
+					TITLE like '%' ||#search_val#|| '%'
+				</isNotNull>
+				<isNotNull property="search_val" prepend="OR">
+					DEPARTMENT like '%' ||#search_val#|| '%'
+				</isNotNull>
+				<isNotNull property="search_val" prepend="OR">
+					USER_ID like '%' ||#search_val#|| '%'
+				</isNotNull>
+				<isNotNull property="search_val" prepend="OR">
+					CONTACT_NUMBER like '%' ||#search_val#|| '%'
+				</isNotNull>
+				<isNotNull property="search_val" prepend="OR">
+					RECEIVE_EMAIL like '%' ||#search_val#|| '%'
+				</isNotNull>
+			</isNull>
+		</dynamic>
+	</select>
+
+	<!-- Report 목록 조회하는 쿼리 -->
+	<select id="selectReportList" resultClass="HashMap" parameterClass="HashMap">
+		SELECT t1.*
+		FROM (
+			SELECT t2.*, rownum AS rnum
+			FROM (
+				SELECT REPORT_SEQ, REPORT_TYPE, TITLE, REG_DATE, DEPARTMENT, USER_ID,
+				CONTACT_NUMBER, RECEIVE_EMAIL, CURRENT_SITUATION
+				FROM INDIGO_REPORT
+				<dynamic prepend="WHERE">
+					<!-- search_type이 지정되었을 때 -->
+					<isNotNull property="search_type">
+						<isEqual prepend="AND" property="search_type" compareValue="title"></isEqual>
+							TITLE
+						<isEqual prepend="AND" property="search_type" compareValue="department">
+							DEPARTMENT
+						</isEqual>
+						<isEqual prepend="AND" property="search_type" compareValue="user_id">
+							USER_ID
+						</isEqual>
+						<isEqual prepend="AND" property="search_type" compareValue="contact_number">
+							CONTACT_NUMBER
+						</isEqual>
+						<isEqual prepend="AND" property="search_type" compareValue="receive_email">
+							RECEIVE_EMAIL
+						</isEqual>
+						<isNotNull property="search_val">
+							like '%' ||#search_val#|| '%'
+						</isNotNull>
+					</isNotNull>
+					<!-- search_type이 지정되지 않았을 때 -->
+					<isNull property="search_type">
+						<isNotNull property="search_val" prepend="OR">
+							TITLE like '%' ||#search_val#|| '%'
+						</isNotNull>
+						<isNotNull property="search_val" prepend="OR">
+							DEPARTMENT like '%' ||#search_val#|| '%'
+						</isNotNull>
+						<isNotNull property="search_val" prepend="OR">
+							USER_ID like '%' ||#search_val#|| '%'
+						</isNotNull>
+						<isNotNull property="search_val" prepend="OR">
+							CONTACT_NUMBER like '%' ||#search_val#|| '%'
+						</isNotNull>
+						<isNotNull property="search_val" prepend="OR">
+							RECEIVE_EMAIL like '%' ||#search_val#|| '%'
+						</isNotNull>
+					</isNull>
+				</dynamic>
+				ORDER BY REPORT_SEQ DESC
+			) t2
+		)t1
+		<!-- WHERE ROWNUM BETWEEN -->
+		<isNotNull property="start">
+			<![CDATA[
+	      WHERE t1.rnum > #start#
+	      AND t1.rnum <= #max#
+	    ]]>
+		</isNotNull>
+	</select>
+
+	<!-- ReportList 데이터 데이터베이스에서 읽어옴 -->
+	<select id="selectReport" resultClass="reportVO" parameterClass="int">
+		SELECT
+		REPORT_SEQ,
+		REPORT_TYPE,
+		TITLE,
+		REG_DATE,
+		DEPARTMENT,
+		USER_ID,
+		CONTACT_NUMBER,
+		RECEIVE_EMAIL,
+		CURRENT_SITUATION
+		FROM INDIGO_REPORT
+		WHERE REPORT_SEQ = #reportSeq#
+	</select>
+
+	<!-- ReportList 데이터 데이터베이스에 입력 -->
+	<insert id="insertReport" parameterClass="reportVO">
+		INSERT INTO INDIGO_REPORT ( REPORT_SEQ, REPORT_TYPE,
+								  TITLE, DEPARTMENT, USER_ID, CONTACT_NUMBER, RECEIVE_EMAIL,
+								  CURRENT_SITUATION, REG_DATE)
+		VALUES (REPORT_SEQ.NEXTVAL, #report_Type#, #title#, #department#, #user_Id#,
+				#contact_Number#, #receive_Email#, #current_Situation#, #reg_Date#)
+	</insert>
+
+</sqlMap>

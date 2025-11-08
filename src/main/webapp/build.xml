@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="IndigoESBWebConsole" default="compile">
+    <property name="src.dir" value="../src/main/java"/>
+    <property name="resources.dir" value="../src/main/resources"/>
+    <property name="web.dir" value="."/>
+    <property name="build.dir" value="../build"/>
+    <property name="dist.dir" value="../dist"/>
+    <property name="bin.dir" value="../bin"/>
+    <property name="war.file" value="../dist/IndigoESBWebConsole.war"/>
+
+    <path id="compile.classpath">
+        <fileset dir="${web.dir}/WEB-INF/lib">
+            <include name="**/*.jar"/>
+        </fileset>
+        <pathelement location="C:/javax.servlet-api-3.0.1.jar"/>
+    </path>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+        <delete>
+            <fileset dir="${bin.dir}" includes="**/*.class"/>
+        </delete>
+    </target>
+
+    <target name="prepare">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${bin.dir}"/>
+    </target>
+
+    <target name="compile" depends="prepare">
+        <echo message="Compiling Java source files..."/>
+        <javac srcdir="${src.dir}" destdir="${bin.dir}" encoding="UTF-8" includeantruntime="false" debug="on">
+            <classpath refid="compile.classpath"/>
+        </javac>
+        <echo message="Copying resources..."/>
+        <copy todir="${bin.dir}">
+            <fileset dir="${resources.dir}"/>
+        </copy>
+        <echo message="Build successful!"/>
+    </target>
+
+    <target name="war" depends="compile">
+        <echo message="Creating WAR file..."/>
+        <mkdir dir="${build.dir}/WEB-INF/classes"/>
+        <copy todir="${build.dir}">
+            <fileset dir="${web.dir}">
+                <exclude name="**/build.xml"/>
+                <exclude name="ext/**"/>
+            </fileset>
+        </copy>
+        <copy todir="${build.dir}/WEB-INF/classes">
+            <fileset dir="${bin.dir}"/>
+        </copy>
+        <jar destfile="${war.file}" basedir="${build.dir}"/>
+        <echo message="WAR file created at ${war.file}"/>
+    </target>
+</project>

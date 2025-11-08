@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 미래에셋 인터페이스 통계 쿼리 -->
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_interface_statistics">
+ <typeAlias alias="ifStatisticsVo" type="com.indigo.web.agent.vo.InterfaceStatisticsVO"/>
+ <typeAlias alias="masterLogVo" type="com.indigo.web.agent.vo.ImsMasterLogVO"/>
+ <typeAlias alias="resultLogVo" type="com.indigo.web.agent.vo.ImsResultLogVO"/>
+ <typeAlias alias="statisticsVo" type="com.indigo.web.agent.vo.ImsTotStatisticsVO"/>
+
+
+ <sql id="master">IMS_MSG_HUB_MASTER_LOG</sql>
+ <sql id="detail">IMS_MSG_HUB_DETAIL_LOG</sql>
+ <sql id="result">IMS_MSG_HUB_RESULT_LOG</sql>
+ <sql id="total">IMS_MSG_HUB_STATISTICS</sql>
+ <sql id="cvt">IMS_MSG_HUB_CVT_RESULT_LOG</sql>
+
+ <select id="getImsMasterLogByColumn" parameterClass="map" resultClass="masterLogVo">
+   SELECT * FROM <include refid="master"/>
+   ORDER BY IF_ID ASC
+ </select>
+
+ <select id="getImsMasterLogListByDate" parameterClass="map" resultClass="masterLogVo">
+   SELECT * FROM <include refid="master"/>
+   <dynamic prepend="where">
+      <isNotNull prepend="and" property="IF_ID">
+       IF_ID = #IF_ID#
+      </isNotNull>
+      <isNotNull  prepend="and" property="START_DATE">
+       MSG_CREATE_DT BETWEEN #START_DATE# AND #END_DATE#
+      </isNotNull>
+      </dynamic>
+       ORDER BY IF_ID ASC
+ </select>
+
+ <select id="getImsMasterLogIfid" parameterClass="map" resultClass="masterLogVo">
+   SELECT DISTINCT(if_id) FROM <include refid="master"/> ORDER BY IF_ID ASC
+ </select>
+
+ <select id="getImsDetailLogByColumn" parameterClass="map" resultClass="ifStatisticsVo">
+   SELECT * FROM <include refid="detail"/>
+ </select>
+
+ <select id="getImsResultLogByDate" parameterClass="map" resultClass="resultLogVo">
+   SELECT * FROM <include refid="result"/>
+   WHERE
+      MSG_RCV_DT BETWEEN #START_DATE# AND #END_DATE# AND
+      STATUS_CD = 'F'
+ </select>
+
+ <select id="getImsCvtResultLogByColumn" parameterClass="map" resultClass="ifStatisticsVo">
+   SELECT * FROM <include refid="cvt"/>
+ </select>
+
+
+ <select id="getImsResultLog" parameterClass="map" resultClass="resultLogVo">
+   SELECT * FROM <include refid="result"/>
+   WHERE
+       DEST_ID = #DEST_ID#
+       <isNotNull prepend="and" property="TX_ID">
+       TX_ID = #TX_ID#
+       </isNotNull>
+
+       <isNotNull prepend="and" property="START_DATE">
+        MSG_RCV_DT between #START_DATE# AND #END_DATE#
+       </isNotNull>
+
+   ORDER BY MSG_RCV_DT ASC
+ </select>
+
+ <select id="getImsTotalStatistics" parameterClass="map" resultClass="ifStatisticsVo">
+	SELECT	A.IF_ID,
+		(CASE WHEN SUM( CASE WHEN A.STATUS_CD = 'S' THEN A.AMT END )
+         IS NULL THEN 0 
+         ELSE SUM( CASE WHEN A.STATUS_CD = 'S' THEN A.AMT END )  END
+         )  
+         AS SUCCESS_CNT,
+		(CASE WHEN SUM( CASE WHEN A.STATUS_CD = 'F' THEN A.AMT END ) 
+         IS NULL THEN 0
+         ELSE SUM( CASE WHEN A.STATUS_CD = 'F' THEN A.AMT END )  END
+         )  
+         AS ERROR_CNT,
+		(CASE WHEN SUM( CASE WHEN A.STATUS_CD IS NULL THEN A.AMT END )
+         IS NULL THEN 0 
+         ELSE SUM( CASE WHEN A.STATUS_CD IS NULL THEN A.AMT END )  END
+         )  
+         AS NOT_PROCCESSING_CNT
+	FROM	(
+		SELECT DISTINCT MSG_CREATE_DT,1 AMT,IF_ID,STATUS_CD FROM IMS_MSG_HUB_MASTER_LOG left outer JOIN IMS_MSG_HUB_RESULT_LOG
+	  ON
+	    IMS_MSG_HUB_MASTER_LOG.TX_ID = IMS_MSG_HUB_RESULT_LOG.TX_ID AND
+	    IMS_MSG_HUB_MASTER_LOG.IF_ID = IMS_MSG_HUB_RESULT_LOG.DEST_ID
+	  <dynamic prepend="where">
+	     <isNotEmpty property="START_DATE" prepend="AND">
+	    	 MSG_CREATE_DT between #START_DATE# AND #END_DATE#
+	     </isNotEmpty>
+	  </dynamic>
+	) A
+	GROUP BY  A.IF_ID
+	ORDER BY  A.IF_ID ASC
+
+ </select>
+
+ <select id="getImsMsgHubStatistics" parameterClass="map" resultClass="statisticsVo">
+    SELECT DISTINCT(IF_ID),
+	  SUM(MSG_SCS_CNT) OVER (PARTITION BY IF_ID) AS MSG_SCS_CNT,
+	  SUM(MSG_ERR_CNT) OVER (PARTITION BY IF_ID) AS MSG_ERR_CNT,
+	  SUM(MSG_NPC_CNT) OVER (PARTITION BY IF_ID) AS MSG_NPC_CNT,
+	  SUM(MSG_TOT_CNT) OVER (PARTITION BY IF_ID) AS MSG_TOT_CNT
+	 FROM <include refid="total"/>
+	  <dynamic prepend="where">
+	    <isNotNull prepend="AND" property="START_DATE">
+	    	 MSG_SAVE_DATE between #START_DATE# AND #END_DATE#
+	    </isNotNull>
+	   </dynamic>
+ </select>
+
+ <insert id="insertImsMsgHubStatistics" parameterClass="map">
+
+ 	INSERT INTO <include refid="total"/>
+ 		VALUES(#MSG_SAVE_DATE#,#IF_ID#,#MSG_SCS_CNT#,#MSG_ERR_CNT#,#MSG_NPC_CNT#,#MSG_TOT_CNT#)
+
+ </insert>
+
+ <!-- 날짜별 Result Log Table 통계 -->
+ <select id="getImsResultLogStatistics" parameterClass="map" resultClass="ifStatisticsVo">
+	 	<isNotNull property="DAY">
+		SELECT	SUBSTR( A.MSG_CREATE_DT, 1, 8) AS MSG_CREATE_DT
+		</isNotNull>
+		<isNotNull property="MONTH">
+		SELECT	SUBSTR( A.MSG_CREATE_DT, 1, 6) AS MSG_CREATE_DT
+		</isNotNull>
+		<isNotNull property="YEAR">
+		SELECT	SUBSTR( A.MSG_CREATE_DT, 1, 4) AS MSG_CREATE_DT
+		</isNotNull>
+		,(CASE WHEN SUM( CASE WHEN A.STATUS_CD = 'S' THEN A.AMT END )
+         IS NULL THEN 0 
+         ELSE SUM( CASE WHEN A.STATUS_CD = 'S' THEN A.AMT END )  END
+         ) AS SUCCESS_CNT,
+		(CASE WHEN SUM( CASE WHEN A.STATUS_CD = 'F' THEN A.AMT END )
+         IS NULL THEN 0 
+         ELSE SUM( CASE WHEN A.STATUS_CD = 'F' THEN A.AMT END )  END
+         ) AS ERROR_CNT
+		FROM	(
+			  SELECT DISTINCT MSG_CREATE_DT,1 AMT,IF_ID,STATUS_CD 
+			  FROM IMS_MSG_HUB_MASTER_LOG left outer JOIN IMS_MSG_HUB_RESULT_LOG
+			  ON
+			    IMS_MSG_HUB_MASTER_LOG.TX_ID = IMS_MSG_HUB_RESULT_LOG.TX_ID AND
+			    IMS_MSG_HUB_MASTER_LOG.IF_ID = IMS_MSG_HUB_RESULT_LOG.DEST_ID
+			  WHERE
+			     MSG_CREATE_DT BETWEEN #START_DATE# AND #END_DATE#
+			     AND
+			       IF_ID = #DEST_ID#
+			  ) A
+		<isNotNull property="DAY">
+		GROUP BY  SUBSTR( A.MSG_CREATE_DT, 1, 8 )
+		</isNotNull>
+		<isNotNull property="MONTH">
+		GROUP BY  SUBSTR( A.MSG_CREATE_DT, 1, 6 )
+		</isNotNull>
+		<isNotNull property="YEAR">
+		GROUP BY  SUBSTR( A.MSG_CREATE_DT, 1, 4 )
+		</isNotNull>
+		ORDER BY  MSG_CREATE_DT ASC
+ </select>
+
+ <!-- 날짜별 Result Log Table 통계 -->
+ <select id="getImsMsgHubDetailData" parameterClass="map" resultClass="statisticsVo">
+	 	<isNotNull property="DAY">
+		SELECT	SUBSTR( MSG_SAVE_DATE, 1, 8) AS MSG_SAVE_DATE
+		</isNotNull>
+		<isNotNull property="MONTH">
+		SELECT	SUBSTR( MSG_SAVE_DATE, 1, 6) AS MSG_SAVE_DATE
+		</isNotNull>
+		<isNotNull property="YEAR">
+		SELECT	SUBSTR( MSG_SAVE_DATE, 1, 4) AS MSG_SAVE_DATE
+		</isNotNull>
+		,	NVL( SUM( MSG_SCS_CNT ), 0 ) AS MSG_SCS_CNT
+		,	NVL( SUM( MSG_ERR_CNT ), 0 ) AS MSG_ERR_CNT
+		,	NVL( SUM( MSG_NPC_CNT ), 0 ) AS MSG_NPC_CNT
+		FROM	<include refid="total"/>
+		<dynamic prepend="where">
+			<isNotNull prepend="AND" property="START_DATE">
+				 MSG_SAVE_DATE BETWEEN #START_DATE# AND #END_DATE#
+			</isNotNull>
+			<isNotNull prepend="AND" property="IF_ID">
+				IF_ID = #IF_ID#
+			</isNotNull>
+			<isNotNull property="DAY">
+			GROUP BY  SUBSTR( MSG_SAVE_DATE, 1, 8 )
+			</isNotNull>
+			<isNotNull property="MONTH">
+			GROUP BY  SUBSTR( MSG_SAVE_DATE, 1, 6 )
+			</isNotNull>
+			<isNotNull property="YEAR">
+			GROUP BY  SUBSTR( MSG_SAVE_DATE, 1, 4 )
+			</isNotNull>
+		</dynamic>
+		ORDER BY  MSG_SAVE_DATE ASC
+ </select>
+
+
+</sqlMap>

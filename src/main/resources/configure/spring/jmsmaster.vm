@@ -1,0 +1,49 @@
+<beans>
+#foreach( $jmsconn in $data.jmsConnectionList )
+	<bean id="$jmsconn.jmsConnectionId" class="$jmsconn.jmsConnectionClazz" destroy-method="$jmsconn.jmsConnectionDestory">
+        <description><![CDATA[$jmsconn.description]]></description>
+        <property name="connectionFactory">
+            <bean class="$jmsconn.connectionFactoryClazz">
+                <property name="brokerURL">
+                    <value><![CDATA[$jmsconn.brokerURL]]></value>
+                </property>
+            </bean>
+        </property>
+        <property name="maxConnections" value="$jmsconn.maxConnections"/>
+        <property name="idleTimeout" value="$jmsconn.idleTimeout"/>
+        <property name="maximumActive" value="$jmsconn.maximumActive"/>
+    </bean>
+#end
+#foreach( $jmslistener in $data.jmsListenerList )
+	
+	<bean id="$jmslistener.jmsListenerId" class="$jmslistener.jmsListenerClazz">
+        <description><![CDATA[$jmslistener.description]]></description>
+        <property name="concurrentConsumers" value="$jmslistener.concurrentConsumers"/>
+        <property name="connectionFactory" ref="$jmslistener.jlConnectionFactoryId"/>
+        <property name="destinationName" value="$jmslistener.destinationName"/>
+        <property name="messageListener" ref="$jmslistener.messageListener"/>
+        <property name="messageSelector" value="$jmslistener.messageSelector"/>
+        <property name="sessionTransacted" value="$jmslistener.sessionTransacted"/>
+        #if($jmslistener.receiveTimeout != 0)
+        	<property name="receiveTimeout" value="$jmslistener.receiveTimeout"/>
+        #end
+        <property name="pubSubDomain" value="$jmslistener.pubSubDomain"/>
+    </bean>
+#end
+#foreach( $jmstemplate in $data.jmsTemplateList )
+	
+	<bean id="$jmstemplate.jmsTemplateId" class="$jmstemplate.jmsTemplateClazz">
+        <description><![CDATA[$jmstemplate.description]]></description>
+        <property name="connectionFactory" ref="$jmstemplate.jtConnectionFactoryId"/>
+        <property name="deliveryMode" value="$jmstemplate.deliveryMode"/>
+        <property name="priority" value="$jmstemplate.priority"/>
+        <property name="timeToLive" value="$jmstemplate.timeToLive"/>
+        <property name="pubSubDomain" value="$jmstemplate.pubSubDomain"/>
+        <property name="explicitQosEnabled" value="$jmstemplate.explicitQosEnabled"/>
+        <property name="sessionTransacted" value="$jmstemplate.sessionTransacted"/>
+        #if($jmstemplate.receiveTimeout != 0)
+        	<property name="receiveTimeout" value="$jmstemplate.receiveTimeout"/>
+        #end
+	</bean>
+#end
+</beans>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="main_search">
+
+	<select id="getProductTotalCountListByPdNameAndPdId" resultClass="integer" parameterClass="java.util.Map">
+		SELECT count(*)
+	        FROM   ESB_PRODUCT PD
+	        WHERE PD_NAME LIKE '%'||#SEARCH_VALUE#||'%' 
+	        OR   PD_ALIAS LIKE'%'||#SEARCH_VALUE#||'%'
+	</select>
+	<select id="getProductListByPdNameAndPdId" resultClass="java.util.HashMap" parameterClass="java.util.Map">
+    	<![CDATA[                                   		
+    	SELECT T.*
+	    FROM    (SELECT ROW_NUMBER() OVER() AS row_num,
+	        		PD_ID, 
+	        		PD_TYPE, 
+	        		PD_ORDER, 
+	        		PD_NAME, 
+	        		PD_ALIAS,
+	        		PD_REG_DATE, 
+	        		PD_REG_USER,
+				    IN_IM_ID, 
+				    FINAL_NW_STATUS, 
+				    FINAL_MO_STATUS, 
+				    FINAL_DS_STATUS, 
+				    FINAL_MO_REG_DATE, 
+				    MO_ERROR_CNT,
+				    PD_GROUP_ID,
+				    PD_FAVORITE, 
+				    PD_FIREWALL,
+	        		CASE WHEN {FN TIMESTAMPDIFF(SQL_TSI_SECOND, FINAL_MO_REG_DATE, CURRENT_TIMESTAMP)}  > 180 THEN '-9'
+						WHEN {FN TIMESTAMPDIFF(SQL_TSI_SECOND,  FINAL_MO_REG_DATE, CURRENT_TIMESTAMP)} IS NULL THEN 'null'
+						ELSE '1' END PD_STATUS
+	        FROM   ESB_PRODUCT PD
+	        WHERE PD_NAME LIKE '%'||#SEARCH_VALUE#||'%' 
+	        OR   PD_ALIAS LIKE'%'||#SEARCH_VALUE#||'%') T
+           OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+	]]>
+    </select>
+</sqlMap>

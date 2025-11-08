@@ -1,0 +1,16 @@
+<beans>
+#foreach( $habean in $data )
+	<bean id="$habean.id" class="$habean.clazz">
+        <property name="master" value="$habean.master"/>
+        <property name="backMaster" value="$habean.backMaster"/>
+#if($habean.esbHost != "")
+        <property name="esbHost" value="$habean.esbHost"/>
+#end
+        <property name="targetHost" value="$habean.targetHost"/>
+        <property name="pingFailCount" value="$habean.pingFailCount"/>
+        <property name="monitorInterval" value="$habean.monitorInterval"/>
+        <property name="pingTimeout" value="$habean.pingTimeout"/>
+        <property name="configureLocation" value="$habean.configureLocation"/>
+    </bean>
+#end
+</beans>

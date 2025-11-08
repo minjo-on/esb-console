@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="esb_errorchecklist">
+
+	<typeAlias alias="errcheckvo" type="com.indigo.web.esb.vo.ErrorCheckVO"/>
+	
+	<sql id="errch_table">esb_ERROR_CHECK_LIST</sql>
+	
+	<select id="getCheckList" parameterClass="map" resultClass="errcheckvo">
+		select ALIAS, IP, PORT, URL, SYSTEM_NAME, DESCRIPTION
+		from
+			<include refid="errch_table" />
+		<isNotEmpty property="ALIAS">
+		where
+			alias = #ALIAS#
+		</isNotEmpty>
+		order by in_date	
+	</select>
+	
+	<delete id="deleteErrorCheck" parameterClass="string">
+		delete from <include refid="errch_table" />
+		where 
+			alias = #ALIAS#
+	</delete>
+	
+	<insert id="insertErrorCheck" parameterClass="errcheckvo">
+		insert into <include refid="errch_table" />
+		(alias, ip, port, url, system_name, description, in_date)
+		values
+		(#alias#, #ip#, #port#, #url#, #system_name#, #description#,sysdate)
+	</insert>
+	
+	<update id="updateErrorCheck" parameterClass="errcheckvo">
+		update <include refid="errch_table" /> 
+		set ip = #ip#,
+			port = #port#,
+			url = #url#,
+			system_name = #system_name#,
+			description = #description#
+		where
+			alias = #alias#
+	</update>
+</sqlMap>

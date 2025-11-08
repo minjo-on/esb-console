@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_sms">
+
+	<typeAlias alias="sms" type="com.indigo.web.agent.vo.EaiSmsVO"/>
+	
+	<sql id="sms_table">esb_SMS</sql>
+	<sql id="product_table">esb_PRODUCT</sql>
+	
+	<sql id="join_cols">
+	    PD.PD_ID, SMS.SMS_SND_YN, PD.PD_TYPE, PD.PD_NAME, PD.PD_ALIAS
+	</sql>
+
+    <select id="getEaiSmsList" parameterClass="string" resultClass="sms">
+        select <include refid="join_cols" />
+        from   <include refid="sms_table" /> SMS,
+               <include refid="product_table" /> PD
+        where  SMS.PD_ID = PD.PD_ID
+        <isParameterPresent>
+        and    PD.PD_TYPE = #value#
+        </isParameterPresent>
+        <isNotParameterPresent>
+        order by PD.PD_TYPE DESC, PD.PD_ORDER
+        </isNotParameterPresent>
+    </select>
+    
+    <select id="getEaiSmsAddList" parameterClass="string" resultClass="sms">
+        select <include refid="join_cols" />
+        from   <include refid="product_table" /> PD left outer join <include refid="sms_table" /> SMS
+               on (PD.PD_ID = SMS.PD_ID)
+        where  PD.PD_TYPE = #value#
+        and    SMS.PD_ID is null
+        order by PD.PD_ORDER
+    </select>
+    
+    <insert id="insertEaiSms" parameterClass="sms">
+    	insert into <include refid="sms_table" />
+    	(PD_ID, SMS_SND_YN)
+    	values
+    	(#pd_id#, #sms_snd_yn#)
+    </insert>
+    
+    <delete id="deleteEaiSms" parameterClass="string">
+        delete from <include refid="sms_table" />
+        where  PD_ID = #value#
+    </delete>
+    
+    <update id="updateEaiSmsSndYn" parameterClass="map">
+		update <include refid="sms_table" />
+		set    SMS_SND_YN = #SMS_SND_YN# 
+		where  PD_ID = #PD_ID#
+    </update>
+    
+</sqlMap>

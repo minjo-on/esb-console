@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_interface">
+	<cacheModel id="cachemodel.codeCache" type="LRU" readOnly="true" serialize="false">
+		<!-- 디폴트 cache-size는 100. 캐시를 사용하는 쿼리에 where 조건이 없으니 10만 설정해도 됨. 100은 비효율적임 -->
+	    <property name="cache-size" value="10" /> 
+	    <flushOnExecute statement="indigo_code.insertCode"/>
+	    <flushOnExecute statement="indigo_code.updateCode"/>
+	    <flushOnExecute statement="indigo_code.deleteCode"/>
+	</cacheModel>
+
+	<typeAlias alias="routeVo" type="com.indigo.web.agent.vo.RouteInfoVO" />
+	<typeAlias alias="code_clss" type="com.indigo.web.mgmt.vo.IndigoCodeVO"/>
+	<select id="getRouteInfo" parameterClass="map" resultClass="routeVo">
+		SELECT T1.*
+			,CASE WHEN (SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_ID = T1.IF_ID AND CODE_DIV = '01') IS NOT NULL THEN (SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_ID = T1.IF_ID AND CODE_DIV = '01')
+			ELSE T1.IF_ID END AS IF_NAME
+			, (SELECT count(*) FROM ROUTE_INFO
+		<isNotEmpty property="IF_ID">
+			WHERE IF_ID = #IF_ID#
+		</isNotEmpty>
+		) AS TOTCNT FROM(
+		SELECT ROW_NUMBER() OVER () AS row_num, A.*
+		FROM(
+		SELECT * FROM ROUTE_INFO
+		<dynamic prepend="WHERE">
+		<!-- 서치 타입 TOTAL 추가 190409 임정욱 -->
+		<isNotEmpty property="TOTAL">
+			IF_ID LIKE '%' || #TOTAL# || '%' OR DEST_ID LIKE '%' || #TOTAL# || '%' OR IF_NAME LIKE '%' || #TOTAL# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="IF_ID">
+			IF_ID LIKE '%' || #IF_ID# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="DEST_ID" prepend="and">
+			DEST_ID LIKE '%' || #DEST_ID# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="IF_NAME" prepend="and">
+			IF_NAME LIKE '%' || #IF_NAME# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="DATA_DEST_QUEUE" prepend="and">
+			DATA_DEST_QUEUE LIKE '%' || #DATA_DEST_QUEUE# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="RESULT_DEST_QUEUE" prepend="and">
+			RESULT_DEST_QUEUE LIKE '%' || #RESULT_DEST_QUEUE# || '%'
+		</isNotEmpty>
+		</dynamic>
+		ORDER BY CHANGE_DATE DESC
+		) A
+		) T1
+		<isNotEmpty property="SKIP_INDEX">
+		<![CDATA[
+			OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+		]]>
+		</isNotEmpty>
+	</select>
+
+	<select id="getInterfaceIdCount" parameterClass="map"
+		resultClass="Integer">
+		SELECT COUNT(*) FROM ROUTE_INFO
+		WHERE IF_ID = #if_id#
+	</select>
+	
+	<select id="getResultDestQueueName" parameterClass="String"
+		resultClass="String">
+			SELECT RESULT_DEST_QUEUE FROM ROUTE_INFO 
+			WHERE IF_ID = #if_id#
+			AND ROWNUM = 1
+	</select>
+
+
+	<insert id="inserteRouteInfo" parameterClass="map">
+		INSERT INTO ROUTE_INFO(
+		IF_ID,
+		DEST_ID,
+		DATA_ARR_QUEUE,
+		DATA_DEST_QUEUE,
+		RESULT_ARR_QUEUE,
+		RESULT_DEST_QUEUE,
+		REMOTE_YN,
+		CHANGE_DATE,
+		DESCRIPTION,
+		USING_IP,
+		USE_YN,
+		SND_CD,
+		RCV_CD,
+		IF_NAME
+		)
+		VALUES(
+		upper(#IF_ID#),
+		upper(#DEST_ID#),
+		#DATA_ARR_QUEUE#,
+		#DATA_DEST_QUEUE#,
+		#RESULT_ARR_QUEUE#,
+		#RESULT_DEST_QUEUE#,
+		#REMOTE_YN#,
+		#CHANGE_DATE#,
+		#DESCRIPTION#,
+		#USING_IP#,
+		#USE_YN#,
+		#SND_CD#,
+		#RCV_CD#,
+		#IF_NAME#
+		)
+	</insert>
+	
+	<update id="updateRouteInfo" parameterClass="map">
+	  UPDATE ROUTE_INFO SET
+	      DATA_ARR_QUEUE =  #DATA_ARR_QUEUE#,
+	      DATA_DEST_QUEUE =  #DATA_DEST_QUEUE#,
+	      RESULT_ARR_QUEUE =  #RESULT_ARR_QUEUE#,
+	      RESULT_DEST_QUEUE =  #RESULT_DEST_QUEUE#,
+	      REMOTE_YN =  #REMOTE_YN#,
+	      CHANGE_DATE =  #CHANGE_DATE#,
+	      DESCRIPTION =  #DESCRIPTION#,
+	      USING_IP = #USING_IP#,
+	      USE_YN = #USE_YN# ,
+	      SND_CD = #SND_CD#,
+	      RCV_CD = #RCV_CD#,
+	      IF_NAME = #IF_NAME#
+   	  WHERE IF_ID =  upper(#IF_ID#) AND DEST_ID =  upper(#BEFORE_DEST_ID#) 
+  </update>
+	
+	<update id="deleteRouteInfo" parameterClass="map">
+	  DELETE FROM ROUTE_INFO WHERE
+      	IF_ID =  upper(#IF_ID#) AND DEST_ID =  upper(#DEST_ID#) 
+  </update>
+
+	<update id="clearUserIfMappInfo" parameterClass="String">
+		DELETE FROM	USER_IF_MAPP_INFO
+		WHERE IF_ID = #if_id#
+	</update>
+	
+	<update id="clearUserIfMappInfoByUsername" parameterClass="String">
+		DELETE FROM	USER_IF_MAPP_INFO
+		WHERE USER_ID = #user_id#
+	</update>
+	
+  	<update id="insertUserIfMappInfo" parameterClass="map">
+		INSERT INTO USER_IF_MAPP_INFO(MAPP_ID, IF_ID, USER_ID) 
+		<dynamic>
+			<iterate prepend="VALUES" property="MAPP_LIST" conjunction=",">
+	           ( #MAPP_LIST[].mapp_id#, #IF_ID#, #MAPP_LIST[].user_id# )
+	        </iterate>
+	    </dynamic>
+	</update>
+	<select id="getUserIfMappInfo" parameterClass="String"
+		resultClass="String">
+		SELECT USER_ID FROM USER_IF_MAPP_INFO WHERE
+		IF_ID=#IF_ID:VARCHAR#
+	</select>
+
+	<select id="getInterfaceListByUserId" parameterClass="map" resultClass="code_clss">
+		SELECT DISTINCT A.IF_ID AS CODE_ID,
+						A.CODE_DIV,
+						A.USE_YN AS USE_YN,
+						A.CODE_NAME AS CODE_NAME
+		FROM (
+			SELECT '01' AS CODE_DIV,
+				   CD.CODE_ID AS IF_ID,
+				   'Y' AS USE_YN,
+				   CD.CODE_NAME AS CODE_NAME
+			FROM ROUTE_INFO RT 
+				INNER JOIN INDIGO_CODE CD ON RT.IF_ID = CD.CODE_ID
+		WHERE 1=1
+		<dynamic prepend="AND">
+				<isNotNull property="if_query">
+					RT.IF_ID LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%'
+				</isNotNull>
+		</dynamic>
+		OFFSET #SKIP_INDEX# ROWS FETCH FIRST #MAX_ROW# ROW ONLY
+		) A
+	</select>
+	
+	<select id="getTotalInterfaceCountByUserId" parameterClass="map" resultClass="string">
+		SELECT COUNT(A.IF_ID) FROM (
+			SELECT DISTINCT RT.IF_ID FROM ROUTE_INFO RT
+			WHERE 1=1
+			<dynamic prepend="AND">
+				<isNotNull property="if_query">
+					RT.IF_ID LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%'
+				</isNotNull>
+			</dynamic>
+		) A
+	</select>
+	
+	<select id="getTemplateSndCd" resultClass="java.util.HashMap">
+		SELECT DISTINCT CODE_ID AS SYSTEM_ID, CODE_NAME AS SYSTEM_NAME FROM INDIGO_CODE WHERE CODE_DIV = '02' AND USE_YN = 'Y' ORDER BY SYSTEM_NAME ASC
+	</select>
+	
+	<select id="getTemplateRcvCd" resultClass="java.util.HashMap">
+		SELECT DISTINCT CODE_ID AS SYSTEM_ID, CODE_NAME AS SYSTEM_NAME FROM INDIGO_CODE WHERE CODE_DIV = '02' AND USE_YN = 'Y' ORDER BY SYSTEM_NAME ASC
+	</select>
+	
+	<select id="getIfNameByIfId" parameterClass="string" resultClass="string">
+		SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_ID = #ifid# AND CODE_DIV = '01' AND USE_YN = 'Y'
+	</select>
+</sqlMap>

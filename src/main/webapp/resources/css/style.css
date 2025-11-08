@@ -1,0 +1,125 @@
+/*------- body �좎룞�숉��좎룞��-------*/
+body {font-size:12px; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#555555;
+	scrollbar-face-color:#EAEAEA;
+	scrollbar-highlight-color:#EAEAEA;
+	scrollbar-3dlight-color:#F3F3F3;
+	scrollbar-shadow-color:#9F9F9F;
+	scrollbar-darkshadow-color:#F3F3F3;
+	scrollbar-track-color:#E5E5E5;
+	scrollbar-arrow-color:#9E9E9E;
+	margin-left:0;
+	margin-top:0;
+	margin-right:0;
+	margin-bottom:0;
+	}
+
+/*----- Basic style -----*/
+A:link		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#446bcd; text-decoration:none;}
+A:visited	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#446bcd; text-decoration:none;}
+A:hover 	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#ff7f00; text-decoration:underline;}
+
+SELECT		{background-color:#ffffff; padding:3 0 0 0; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:11px; border:1px #AAAAAA solid;}
+textarea	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#555555; border:1px #AAAAAA solid; padding: 5 5 5 5;}
+TD			{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#555555; line-height:160%}
+img 		{border: none;}
+
+/*----- INPUT---------------------------------------------- */
+.input	{padding:2 0 0 0; border-right:1px #eaeaea solid; border-top:1px #c5c5c5 solid; font-size:12px; border-left:1px #c5c5c5 solid; border-bottom:1px #eaeaea solid; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier;}
+.input1	{background-color:#FFFFFF; padding:2 0 0 3; font-size:12px; color:#555555;}/*�좎룞�숈껜*/
+
+/*----- �좎룞�쇿뜝占썲뜝�숈삕�좎룞�쇿뜝�숈삕 �좎룞�숉��좎룞��----------------*/
+.top_admin			{padding:2 7 0 7; color:#dddddd;}
+
+
+/*----- �좎떦�먯삕 �좎룞�쇿뜝�숈삕�좎룞���좎룞�숉듃 �좎룞�숉��좎룞��-----------*/
+.footer		{background-color:#1e417f; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:11px; color:#dddddd; padding:2 0 0 0; text-align:right;}
+.footer2 	{background-color:#1977E1;}/* ----- bg 移쇔뜝�숈삕 skyblue ----- */
+
+
+/*----- �좎룞�쇿뜝占썲뜝�숈삕�좎떛�몄삕嚥긷뜝占썲뜝�숈삕��뜝�숈삕-----------------*/
+.sidemenu		{padding:1 0 0 0; width:68px; height:20px; color:#FFFFFF; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; text-align:center;}
+.sidemenu_link	{padding:1 0 0 0; width:68px; height:20px; color:#666666; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center;}
+.sidemenu_link A:link		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#666666; text-decoration:none;}
+.sidemenu_link A:visited	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#666666; text-decoration:none;}
+.sidemenu_link A:hover	 	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#000000; text-decoration:none;}
+
+
+/* ----- �좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕�좎룞���좎룞�숉��좎룞��------------ */
+/*
+.l_tb_01		{background-image:url(../img/left_box_bg.gif); padding:15 5 12 5; text-align:center;}
+.l_tb_02		{background-image:url(../img/left_box_bg.gif); padding:15 5 12 5; text-align:left;}
+.search_title	{background-image:url(../img/left_search_subtitle.gif); background-repeat:no-repeat; padding:2 2 0 0; width:63px; height:20px; color:#475e93; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; text-align:center;}
+.data_bg		{background-image:url(../img/left_data_list_bg.gif); background-repeat:no-repeat; width:150px; height:20px; font-size:12px; color:#555555;}
+*/
+.data_bg1		{padding:1 0 0 18; width:90px; height:20px;}
+.data_bg2		{padding:1 10 0 0; width:60px; text-align:right;}
+
+
+/*--------- �좎룞�쇿뜝�숈삕�좎룞���좎룞�쇿뜝�숈삕�좎룞���좎룞�숉��좎룞��--------*/
+.navi		{background-color:#FFFFFF; color:#000000; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; letter-spacing:1px;}/* -----�좎뙎釉앹삕�좎룞�숁뒌�좑옙�좎룞�숉��좎룞���좎룞�쇿뜝�숈삕------------ */
+.main_title	{background-color:#FFFFFF; padding:0 10 0 5; color:#484d9e; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:16; font:bold;}
+
+.list_top				{background-color:#3f7db1;}/* -----�좎룞�쇿뜝�깅툦�쇿뜝占썲뜝�밸뙋��BG 移쇔뜝�숈삕 ------------ */
+.table_line				{background-color:#a4c2db; border:0}/* -----�좎룞�쇿뜝�숈삕���좎떥釉앹삕 �좎룞�쇿뜝�숈삕 移쇔뜝�숈삕------------ */
+
+.view_margin			{margin-left:10; /* margin-right:30; */}
+.view_paging			{letter-spacing:0px;}
+.view_paging A:link	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#333333; text-decoration:none;}
+.view_paging A:visited	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#333333; text-decoration:none;}
+.view_paging A:hover 	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#FF0000; text-decoration:none; font:bold;}
+
+/*
+.main_sub1	{background-image:url(../img/mainmenu4_sub_bg_01.gif); background-repeat:no-repeat; background-color:#FFFFFF; padding:1 0 0 0; width:70px; height:20px; color:#FFFFFF; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; letter-spacing:1px; text-align:center;}
+.main_sub2	{background-image:url(../img/mainmenu4_sub_bg_02.gif); background-repeat:no-repeat; background-color:#FFFFFF; padding:1 0 0 0; width:70px; height:20px; color:#FFFFFF; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; letter-spacing:1px; text-align:center;}
+*/
+.main_sub2 A:link		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#FFFFFF; text-decoration:none;}
+.main_sub2 A:visited	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#FFFFFF; text-decoration:none;}
+.main_sub2 A:hover	 	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#333333; text-decoration:none;}
+
+.sub_title	{background-image:url(../img/subtitle_bg01.gif); background-repeat:no-repeat; background-color:#FFFFFF; padding:2 0 0 0; width:142px; height:20px; color:#FFFFFF; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; text-align:center;}
+.sub_menu				{padding:2 0 0 0; color:#002871; text-align:center;}
+.sub_menu2				{padding:2 0 0 0; color:#333333; text-align:center;}
+.sub_menu A:link		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#002871; text-decoration:none;}
+.sub_menu A:visited		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#002871; text-decoration:none;}
+.sub_menu A:hover 		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#002871; text-decoration:none;}
+.sub_menu2 A:link		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#333333; text-decoration:none;}
+.sub_menu2 A:visited	{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#333333; text-decoration:none;}
+.sub_menu2 A:hover 		{font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; color:#333333; text-decoration:none;}
+
+.tab_on   {background-repeat:no-repeat; background-color:#FFFFFF; padding:2 0 0 0; width:122px; height:20px; color:#FFFFFF; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; text-align:center;}
+.tab_off  {background-repeat:no-repeat; background-color:#FFFFFF; padding:2 0 0 0; width:122px; height:20px; color:#e6e6e6; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; font:bold; text-align:center;}
+
+
+
+/* ----- �좎룞�쇿뜝�깅툦���좎떆琉꾩삕 �좎룞���좎룞�숉듃 �좎룞�숉��좎룞��---------------------------------------------- */
+.td_1	{background-color:#dce1ee; padding:5 0 3 0; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#475e93; font:bold; text-align:center; line-height:15px;}/* -- �좎룞�쇿뜝�숈삕���좎떆琉꾩삕�좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕移쇔뜝�숈삕 -- */
+.td_1_s	{background-color:#dce1ee; padding:5 0 3 0; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; color:#475e93; font:bold; text-align:center; line-height:15px; border-right: 1px solid #a4c2db; border-bottom: 1px solid #a4c2db;}/* -- �좎룞�쇿뜝�숈삕���좎떆琉꾩삕�좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕移쇔뜝�숈삕(�좎룞���좎룞�쇿뜝�숈삕 �좎룞���좎뙥怨ㅼ삕) -- */
+.td_2	{background-color:#FFFFFF; padding:4 3 2 5; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:left;}/* -- �좎룞�쇿뜝�숈삕���좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕- */
+.td_no_business	{ background-image: url(../img/usccdh/images/icon_star.gif);  background-color: white; background-repeat:no-repeat;color:#002871; text-align:center; padding:4 3 2 5; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:left;}/* -- �좎룞�쇿뜝�숈삕���좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕- */
+.td_2_s	{background-color:#FFFFFF; padding:4 3 2 5; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:left;border-right: 1px solid #a4c2db; border-bottom: 1px solid #a4c2db;}/* -- �좎룞�쇿뜝�숈삕���좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕- */
+.td_3	{background-color:#FFFFFF; width:40px; padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center; font:bold;}/* -- �좎룞�쇿뜝�숈삕���좎룞�쇿뜝�숈삕�좎룞�쇿뜝�숈삕�좑옙�좎룞�쇿뜝�숈삕�좎룞�쇿뜝�숈삕�좎룞���좎룞�쇿뜝�숈삕- */
+.td_4	{background-color:#FFFFFF; width:30px; padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center;}/* -- �좎룞�쇿뜝�숈삕��input type �좎룞�쇿뜝�숈삕- */
+.td_5	{background-color:#FFFFFF; padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center;}/* -- �좎룞�쇿뜝�숈삕���좎뜦蹂멨뜝�숈삕�좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕- */
+.td_5_no_bgcolor	{padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center;}/* -- �좎룞�쇿뜝�숈삕���좎뜦蹂멨뜝�숈삕�좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕- */
+.td_modify	{background-color:#FFFFFF; color:red; padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center; border-bottom: 1px solid #a4c2db; border-right: 1px solid #a4c2db;}/* -- �좎룞�쇿뜝�숈삕���좎뜦蹂멨뜝�숈삕�좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕- */
+.td_5_s	{background-color:#FFFFFF; padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center; border-bottom: 1px solid #a4c2db; border-right: 1px solid #a4c2db; }/* -- �좎룞�쇿뜝�숈삕���좎뜦蹂멨뜝�숈삕�좎룞�쇿뜝�숈삕 �좎룞�쇿뜝�숈삕  (�좎룞���좎룞�쇿뜝�숈삕 �좎룞���좎뙥怨ㅼ삕)- */
+.td_6	{background-color:#FFFFFF; padding:3 3 3 3; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:center; color:#333333; font:bold; }/* -- �좎룞�쇿뜝�숈삕���좎룞�쇿뜝�숈삕- */
+.td_6_l	{background-color:#FFFFFF; padding:3 3 3 20; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:12px; text-align:left; color:#333333; font:bold; }/* -- �좎룞�쇿뜝�숈삕���좎룞�쇿뜝�숈삕- */
+.td_7   {background-color:#FFFFFF; padding:4 20 2 5; font-family:"Trebuchet MS", "Geneva CY", Verdana, Courier; font-size:40px; text-align:right;}
+#hidden   {width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#hidden_long   {width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#hidden2   { white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.indigocanvas {
+	padding: 0px;
+    margin: 0px;
+    background-color: rgba(0,0,0,0.5);
+    background-image: url(../../resources/img/modeler/modeler_background.gif);
+}
+
+rect.modeler-label {
+	opacity : 0 !important;
+}
+
+.service-monitoring-refresh-btn{
+	padding: 0px 0px 10px 0px;
+}

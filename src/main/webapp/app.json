@@ -1,0 +1,15 @@
+{
+    "name": "IndigoESBWebConsole",
+
+    "requires": ["ext-locale"],
+
+    "id": "d6fa15b8-21f5-4fe8-8e66-04f865889421",
+    
+    "builds": {
+	    "gray": {
+	        "theme": "ext-theme-gray"
+	    }
+	},
+	
+	"locales": [ "ko" ]
+}

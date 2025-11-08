@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="indigo_group">
+	<typeAlias alias="groupVO" type="com.indigo.web.mgmt.vo.IndigoGroupVO"/>
+	<sql id="group_table">INDIGO_GROUP</sql>
+	<sql id="group_mapping">INDIGO_GROUP_MAPPING</sql>
+
+	<select id="getGroupInfoListByUserId" parameterClass="Map" resultClass="groupVO">
+		select GT.group_id, GT.group_name, GT.group_info 
+		from
+		 <include refid="group_table" /> GT ,
+		 <include refid="group_mapping" /> UMG
+		where GT.group_id = UMG.group_id
+		<isNotNull property="USER_ID" prepend="and">
+		UMG.user_id = #USER_ID#
+		</isNotNull>
+	</select>
+	
+	<select id="getGroupInfoById" parameterClass="String" resultClass="groupVO">
+		select * from <include refid="group_table" /> 
+		where group_id = #value#
+	</select>
+	
+	<select id="getGroupList" resultClass="groupVO">
+		select * from <include refid="group_table" />
+		order by group_name asc
+	</select>
+	
+	<select id="getGroupList2" resultClass="groupVO">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="group_table" />
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+	
+	<insert id="insertGroup" parameterClass="groupVO">
+		insert into <include refid="group_table" /> 
+		(group_id, group_name, group_info)
+		values (#group_id#, #group_name#, #group_info#)
+	</insert>
+	
+	<insert id="insertGroupMapping" parameterClass="java.util.Map">
+		insert into  <include refid="group_mapping" />
+		(user_id, group_id)
+		values (#user_id#, #group_id#)
+	</insert>
+	
+	<update id="updateGroup" parameterClass="groupVO">
+		update <include refid="group_table" />
+		set group_name = #group_name#
+		, group_info = #group_info#
+		where group_id = #group_id# 
+	</update>
+	
+	<delete id="deleteGroup" parameterClass="String">
+		delete from <include refid="group_table" /> 
+		where group_id = #value#
+	</delete>
+	
+    <delete id="deleteGroupMapping" parameterClass="String">
+		delete from <include refid="group_mapping" /> 
+		where user_id = #value#
+	</delete>
+	<select id="getGroupCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="group_table" />
+    </select>
+    <select id="getGroupNameCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="group_table" />
+        where GROUP_NAME like '%' ||#group_name#|| '%'
+    </select>
+    <select id="getGroupIdCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="group_table" />
+        where GROUP_ID like '%' ||#group_id#|| '%'
+    </select>
+    <select id="getGroupNameList" resultClass="groupVO" parameterClass="java.util.Map">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+		        select *
+		        from   <include refid="group_table" />
+		        where GROUP_NAME like '%' ||#group_name#|| '%'
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+     <select id="getGroupIdList" resultClass="groupVO" parameterClass="java.util.Map">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="group_table" />
+		where GROUP_ID like '%' ||#group_id#|| '%'
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <delete id="deleteGroupMappingByGroupId" parameterClass="String">
+		delete from <include refid="group_mapping" /> 
+		where group_id = #value#
+	</delete>
+    <delete id="deleteUserIfMappInfo" parameterClass="String">
+		DELETE FROM USER_IF_MAPP_INFO WHERE USER_ID = #group_id#
+	</delete>
+</sqlMap>

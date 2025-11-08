@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd 
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd			
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd">
+	
+	
+	<context:annotation-config />
+    <context:component-scan base-package="com.indigo.web">
+       <context:include-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+       <context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+    
+    <!-- tx for annotation -->
+    <tx:annotation-driven proxy-target-class="true" transaction-manager="rootContextTransactionManager"/>
+    <tx:annotation-driven proxy-target-class="true" transaction-manager="logContextTransactionManager"/>
+    
+	<bean id="rootContextTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+	  <property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	<!-- 추후에 logContextTransactionManager 사용해야 함 (AbstractLogIBatisDAO) -->
+	<bean id="logContextTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+	  <property name="dataSource" ref="logDataSource"/>
+	</bean>
+   	
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}"/> 
+		<property name="url" value="${jdbc.url}"/>
+		<property name="defaultAutoCommit" value="false"/>
+		<property name="username" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+		<property name="maxActive" value="15"/>
+    	<property name="maxIdle" value="5"/>
+    	<property name="maxWait" value="10000"/>
+    	<property name="testWhileIdle" value="true"/>
+    	<property name="timeBetweenEvictionRunsMillis" value="300000"/>
+     	<property name="validationQuery" value="${ping.query}"/>
+    	<property name="testOnBorrow" value="true"/>
+	</bean>
+	
+	<!-- 추후에 logDataSource 사용해야 함 (AbstractLogIBatisDAO) -->
+	<bean id="logDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}"/> 
+		<property name="url" value="${jdbc.url}"/>
+		<property name="defaultAutoCommit" value="true"/>
+		<property name="username" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+		<property name="maxActive" value="15"/>
+    	<property name="maxIdle" value="5"/>
+    	<property name="maxWait" value="10000"/>
+    	<property name="testWhileIdle" value="true"/>
+    	<property name="timeBetweenEvictionRunsMillis" value="300000"/>
+     	<property name="validationQuery" value="${ping.query}"/>
+    	<property name="testOnBorrow" value="true"/>
+	</bean>
+
+	<!-- SqlMap setup for iBATIS Database Layer -->
+	<bean id="sqlMapClient" class="org.springframework.orm.ibatis.SqlMapClientFactoryBean">
+		<property name="configLocation" value="classpath:/config/sqlmap/sqlmap-config.xml"/>
+		<property name="dataSource" ref="dataSource"/>
+		<property name="lobHandler" ref="lobHandler"/>
+	</bean>
+	
+	<!-- 추후에 logSqlMapClient 사용해야 함 (AbstractLogIBatisDAO) -->
+	<bean id="logSqlMapClient" class="org.springframework.orm.ibatis.SqlMapClientFactoryBean">
+		<property name="configLocation" value="classpath:/config/sqlmap/sqlmap-config.xml"/>
+		<property name="dataSource" ref="logDataSource"/>
+		<property name="lobHandler" ref="lobHandler"/>
+	</bean>
+	
+	
+	<bean id="lobHandler" class="org.springframework.jdbc.support.lob.DefaultLobHandler" />
+
+</beans>	

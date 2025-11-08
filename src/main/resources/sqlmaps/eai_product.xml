@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_product">
+	<typeAlias alias="product"  type="com.indigo.web.agent.vo.EaiProductVO"/>
+	<typeAlias alias="instance" type="com.indigo.web.agent.vo.EaiInstanceVO"/>
+	<typeAlias alias="imanager" type="com.indigo.web.agent.vo.EaiIManagerVO"/>
+
+	<sql id="product_table">esb_PRODUCT</sql>
+	<sql id="group_mapping">INDIGO_GROUP_MAPPING</sql>
+
+	<sql id="product_cols">
+	    PD_ID, PD_TYPE, PD_ORDER, PD_NAME, PD_ALIAS, PD_REG_DATE, PD_REG_USER,
+	    IN_IM_ID, FINAL_NW_STATUS, FINAL_MO_STATUS, FINAL_DS_STATUS, FINAL_MO_REG_DATE, MO_ERROR_CNT,PD_GROUP_ID,
+	    PD_FAVORITE, PD_FIREWALL
+	</sql>
+	
+    <select id="getProductListByColumn" resultClass="product" parameterClass="map">
+        select <include refid="product_cols" />
+        from   <include refid="product_table" />
+        <dynamic prepend="where">
+        	<isNotNull property="PD_TYPE" prepend="and">
+        	PD_TYPE = #PD_TYPE#
+        	</isNotNull>
+        	<isNotNull property="IN_IM_ID" prepend="and">
+        	IN_IM_ID = #IN_IM_ID#
+        	</isNotNull>
+        	<isNotNull property="PD_NAME" prepend="and">
+        	PD_NAME = #PD_NAME#
+        	</isNotNull>
+        	<isNotNull property="PD_ID" prepend="and">
+        	PD_ID = #PD_ID#
+        	</isNotNull>
+        	<isNotNull property="COL_VALUE2" prepend="and">
+        	PD_FIREWALL in (#COL_VALUE2#,#COL_VALUE3#)
+        	</isNotNull>
+        	<isNotNull property="GROUP_ID" prepend="and">
+        		PD_GROUP_ID = #GROUP_ID#
+        	</isNotNull>
+        	<isNotNull property="SRCH_TEXT" prepend="and">
+        	PD_NAME like #SRCH_TEXT:VARCHAR:NO_ENTRY#
+        	</isNotNull>
+        </dynamic>
+        order by PD_ORDER, PD_NAME
+    </select>
+    
+    <select id="getProductListByUserId" resultClass="product" parameterClass="map">
+        select <include refid="product_cols" />
+        from   <include refid="product_table" /> PD,
+        	   <include refid="group_mapping" /> UMG
+        where
+            PD.PD_GROUP_ID = UMG.GROUP_ID
+            AND USER_ID = #USER_ID#
+        	<isNotNull property="PD_TYPE" prepend="and">
+        		PD_TYPE = #PD_TYPE#
+        	</isNotNull>
+        	 <isNotNull property="COL_VALUE2" prepend="and">
+        	PD_FIREWALL in (#COL_VALUE2#,#COL_VALUE3#)
+        	</isNotNull>
+        order by PD_ORDER, PD_NAME
+    </select>
+    
+    <insert id="insertProduct" parameterClass="product">
+        insert into <include refid="product_table" />
+            (<include refid="product_cols" />)
+        values
+            (#pd_id:VARCHAR:NO_ENTRY#, #pd_type:VARCHAR:NO_ENTRY#, #pd_order:NUMERIC:-999999#,
+             #pd_name:VARCHAR:NO_ENTRY#, #pd_alias:VARCHAR:NO_ENTRY#, #pd_reg_date:TIMESTAMP#,
+             #pd_reg_user:VARCHAR:NO_ENTRY#,  #in_im_id:VARCHAR:NO_ENTRY#, #final_nw_status:VARCHAR:NO_ENTRY#,
+             #final_mo_status:VARCHAR:NO_ENTRY#, #final_ds_status:VARCHAR:NO_ENTRY#, #final_mo_reg_date:TIMESTAMP#,
+             #mo_error_cnt:NUMERIC:-999999#,'',#pd_favorite#,#pd_firewall#)
+    </insert>
+
+    <insert id="insertProductByInstance" parameterClass="instance">
+        insert into <include refid="product_table" />
+            (<include refid="product_cols" />)
+        values
+            (#pd_id:VARCHAR:NO_ENTRY#, #pd_type:VARCHAR:NO_ENTRY#, #pd_order:NUMERIC:-999999#,
+             #pd_name:VARCHAR:NO_ENTRY#, #pd_alias:VARCHAR:NO_ENTRY#, #pd_reg_date:TIMESTAMP#,
+             #pd_reg_user:VARCHAR:NO_ENTRY#,  #in_im_id:VARCHAR:NO_ENTRY#, #final_nw_status:VARCHAR:NO_ENTRY#,
+             #final_mo_status:VARCHAR:NO_ENTRY#, #final_ds_status:VARCHAR:NO_ENTRY#, #final_mo_reg_date:TIMESTAMP#,
+             #mo_error_cnt:NUMERIC:-999999#,#pd_group_id#,#pd_favorite#,#pd_firewall#)
+    </insert>
+
+    <insert id="insertProductByIManager" parameterClass="imanager">
+        insert into <include refid="product_table" />
+            (<include refid="product_cols" />)
+        values
+            (#pd_id:VARCHAR:NO_ENTRY#, #pd_type:VARCHAR:NO_ENTRY#, #pd_order:NUMERIC:-999999#,
+             #pd_name:VARCHAR:NO_ENTRY#, #pd_alias:VARCHAR:NO_ENTRY#, #pd_reg_date:TIMESTAMP#,
+             #pd_reg_user:VARCHAR:NO_ENTRY#,  #in_im_id:VARCHAR:NO_ENTRY#, #final_nw_status:VARCHAR:NO_ENTRY#,
+             #final_mo_status:VARCHAR:NO_ENTRY#, #final_ds_status:VARCHAR:NO_ENTRY#,
+             #final_mo_reg_date:TIMESTAMP#, #mo_error_cnt:NUMERIC:-999999#,#pd_group_id:VARCHAR:NO_ENTRY#,#pd_favorite#,#pd_firewall#)
+    </insert>
+
+    <update id="updateProduct" parameterClass="product">
+        update <include refid="product_table" />
+        set    PD_ORDER = #pd_order:NUMERIC:-999999# ,
+               PD_NAME  = #pd_name:VARCHAR:NO_ENTRY#  ,
+               PD_ALIAS = #pd_alias:VARCHAR:NO_ENTRY#
+        where  PD_ID = #pd_id:VARCHAR:NO_ENTRY#
+    </update>
+
+    <update id="updateProductByIManager" parameterClass="imanager">
+        update <include refid="product_table" />
+        set    PD_ORDER = #pd_order:NUMERIC:-999999# ,
+               PD_NAME  = #pd_name:VARCHAR:NO_ENTRY#  ,
+               PD_ALIAS = #pd_alias:VARCHAR:NO_ENTRY#,
+               PD_GROUP_ID = #pd_group_id:VARCHAR:NO_ENTRY#,
+               PD_FIREWALL = #pd_firewall#
+        where  PD_ID = #pd_id:VARCHAR:NO_ENTRY#
+    </update>
+
+    <update id="updateProductByInstance" parameterClass="instance">
+        update <include refid="product_table" />
+        set    PD_ORDER = #pd_order:NUMERIC:-999999# ,
+               PD_NAME  = #pd_name:VARCHAR:NO_ENTRY#  ,
+               PD_ALIAS = #pd_alias:VARCHAR:NO_ENTRY# ,
+               IN_IM_ID = #in_im_id:VARCHAR:NO_ENTRY#
+        where  PD_ID = #pd_id:VARCHAR:NO_ENTRY#
+    </update>
+
+    <update id="updateProductStatus" parameterClass="product">
+        update <include refid="product_table" />
+        set    FINAL_NW_STATUS   = #final_nw_status:VARCHAR:NO_ENTRY# ,
+               FINAL_MO_STATUS   = #final_mo_status:VARCHAR:NO_ENTRY# ,
+               FINAL_DS_STATUS   = #final_ds_status:VARCHAR:NO_ENTRY# ,
+               FINAL_MO_REG_DATE = #final_mo_reg_date:TIMESTAMP# ,
+               MO_ERROR_CNT      = #mo_error_cnt:NUMERIC:-999999#
+        where  PD_ID = #pd_id#
+    </update>
+    
+    <update id="updateImStatus" parameterClass="map">
+        update <include refid="product_table" />
+        set    FINAL_MO_REG_DATE = #final_mo_reg_date:TIMESTAMP#
+        where  PD_ID = #pd_id#
+    </update>
+	
+    <delete id="deleteProduct" parameterClass="string">
+        delete from <include refid="product_table" />
+        where  PD_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+    
+    <update id="updateFavorite" parameterClass="map">
+        update <include refid="product_table" />
+        set    PD_FAVORITE = #PD_FAVORITE#
+        where  PD_ID = #PD_ID#
+    </update>
+    
+	<!-- // Adapter Copy/Move (inserted by kangnaru 2012-02-20) -->
+	<insert id="copyProduct" parameterClass="product">
+        insert into <include refid="product_table" />
+            (PD_ID, PD_TYPE, PD_ORDER, PD_NAME, PD_ALIAS, PD_REG_DATE, PD_REG_USER,
+	    IN_IM_ID, FINAL_NW_STATUS, FINAL_MO_STATUS, FINAL_MO_REG_DATE, MO_ERROR_CNT, FINAL_DS_STATUS, PD_FAVORITE, PD_FIREWALL,
+	    PD_GROUP_ID)
+        (select  
+        	#pd_id:VARCHAR:NO_ENTRY# as PD_ID, PD_TYPE, PD_ORDER, #pd_name:VARCHAR:NO_ENTRY# as PD_NAME, 
+        	#pd_alias:VARCHAR:NO_ENTRY# as PD_ALIAS, PD_REG_DATE, PD_REG_USER, IN_IM_ID, FINAL_NW_STATUS, 
+        	FINAL_MO_STATUS, FINAL_MO_REG_DATE, MO_ERROR_CNT, FINAL_DS_STATUS, PD_FAVORITE, PD_FIREWALL, PD_GROUP_ID
+		 from esb_PRODUCT where PD_ID = #old_pd_id:VARCHAR:NO_ENTRY#)
+    </insert>
+    
+    <update id="updateADGroupId" parameterClass="map">
+        update <include refid="product_table" />
+        set    PD_GROUP_ID = #GROUP_ID#
+        where  IN_IM_ID = #IM_ID#
+    </update>
+    
+    <select id="getByGroupIdPdName" parameterClass="string" resultClass="instance">
+    	SELECT PD_NAME,PD_GROUP_ID 
+    		FROM esb_PRODUCT 
+    		WHERE PD_ID = #value#
+    </select>
+    
+    <select id="getByPdName" parameterClass="string" resultClass="product">
+    	SELECT PD_NAME, PD_ID, PD_ALIAS
+    		FROM esb_PRODUCT 
+    		WHERE IN_IM_ID = #value#
+    </select>
+    
+    <select id ="getByPjName" parameterClass="string" resultClass="string">
+    	SELECT PJ_NAME FROM esb_PROJECT
+			WHERE PJ_ID = (SELECT PJ_ID FROM esb_INSTANCE WHERE IN_ID =#value#)
+    </select>
+    
+    <update id="updateAdStatus" parameterClass="map">
+    	UPDATE esb_PRODUCT 
+    		SET FINAL_NW_STATUS = #FINAL_NW_STATUS#, FINAL_MO_STATUS = #FINAL_MO_STATUS#
+    		, FINAL_DS_STATUS =#FINAL_DS_STATUS#, FINAL_MO_REG_DATE=#FINAL_MO_REG_DATE#
+    	WHERE PD_NAME = #PD_NAME# and PD_TYPE = #PD_TYPE#
+    	
+    </update>
+
+	<select id="getProductOrderOne" resultClass="product">
+		SELECT <include refid="product_cols" />
+        FROM   <include refid="product_table" /> WHERE PD_ORDER = 0 AND PD_TYPE = 'IM'
+	</select>
+</sqlMap>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="mapping">
+	
+	<typeAlias alias="mappingVO" type="com.indigo.web.esb.vo.MappingVO"/>
+	<sql id="mapping_table">MAPPING</sql>
+
+	<select id="getGroupCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="mapping_table" />
+    </select>
+   
+   <select id="getTotalIdCnt" resultClass="int" parameterClass="java.util.Map">
+   		select count(*)
+   		from <include refid="mapping_table" />
+   		<![CDATA[
+   		WHERE if_id like '%' ||#id#|| '%'
+   		]]> 
+   </select>
+   
+	<select id="getGroupList2" resultClass="mappingVO">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="mapping_table" />
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    <select id="getMappingIdList" resultClass="mappingVO" parameterClass="java.util.Map">
+    	select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="mapping_table" />
+        <dynamic prepend="WHERE">
+        	if_id like '%' ||#id#|| '%'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getTotalCodeCnt" resultClass="int" parameterClass="java.util.Map">
+    	select count(*)
+   		from <include refid="mapping_table" />
+   		<![CDATA[
+   		WHERE ins_code like '%' ||#code#|| '%'
+   		]]> 
+    </select>
+    <select id="getMappingCodeList" resultClass="mappingVO" parameterClass="java.util.Map">
+    	select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="mapping_table" />
+        <dynamic prepend="WHERE">
+        	ins_code like '%' ||#code#|| '%'
+        </dynamic>
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+     <delete id="deleteMapping" parameterClass="String">
+    	delete from <include refid="mapping_table" /> 
+		where MAPPING_CODE = #mapping_code# 
+    </delete>
+    
+    <update id="updateMapping" parameterClass="java.util.Map">
+    	update <include refid="mapping_table" />
+    	set if_id=#if_id#, ins_code=#ins_code#, tr_type=#tr_type#, message_id=#message_id#, mapping_use_case=#mapping_use_case#
+    	where MAPPING_CODE = #mapping_code#
+    </update>
+    
+    <insert id="insertMapping" parameterClass="java.util.Map">
+    	insert into <include refid="mapping_table" /> (mapping_code, if_id, ins_code, tr_type, message_id, mapping_use_case)
+    	values (#mapping_code#, #if_id#, #ins_code#, #tr_type#, #message_id#, #mapping_use_case#)
+    </insert>
+    
+    <select id="checkMappingExistance" resultClass="mappingVO" parameterClass="java.util.Map">
+    	select * from <include refid="mapping_table" />
+    	where IF_ID = #if_id# and INS_CODE = #ins_code#
+    </select>
+    
+</sqlMap>

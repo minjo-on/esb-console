@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<componentConfigure type="controlflow" useComponentTag="true">
+	<component type="delay" alias="Delay" icon="Sort.png" tagName="delay">
+		<expression>
+			<language name="language" alias="Expression Language" default="constant" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<!-- <component type="onException" alias="OnException" icon="Sort.png">
+	</component> -->
+	
+	<!-- <loop alias="Loop" icon="Sort.png">
+	</loop> -->
+	<component type="throttle" alias="Throttle" icon="Sort.png" useChild="true" tagName="throttle">
+		<attr name="timePeriodMillis" alias="Time Period Millis" inputType="number" default="1000" />
+		<expression>
+			<language name="language" alias="Expression Language" default="constant" inputType="select" option="['constant','simple','xpath','header','property']"/>
+			<expression name="expression" alias="Expression"/>
+		</expression>
+	</component>
+	<component type="transacted" alias="Transacted" icon="Sort.png" tagName="transacted" useChild="true">
+		<!-- <attr name="ref" alias="Transaction Manager" inputType="ref" option="custombean"/> -->
+	</component>
+	<!-- <component type="throwsException" alias="Throws" icon="Sort.png" tagName="throwException">
+		<uri>
+			<host name="type" alias="Type" inputType="select" option="['soap','exception']" default="soap"/>
+		</uri>
+	</component> -->
+	
+	<component type="throwException" alias="Throws" icon="Sort.png" tagName="throwException">
+		<attr name="ref" alias="Exception Ref" inputType="ref"/>
+	</component>
+	
+	<component type="doTry" alias="Try" icon="Sort.png" isGroupInput="true" useChild="true" tagName="doTry">
+	</component>
+	<component type="doCatch" alias="Catch" icon="Sort.png" useChild="true" tagName="doCatch">
+		<expression>
+			<language name="language" default="exception" inputType="hidden"/>
+			<expression name="exception" alias="ExceptionClass" default="java.lang.Exception"/>
+		</expression>
+	</component>
+
+</componentConfigure>

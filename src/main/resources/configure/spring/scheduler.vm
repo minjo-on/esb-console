@@ -1,0 +1,18 @@
+<beans>
+#foreach( $scheduler in $data )
+	<bean id="$scheduler.schedulerId" class="$scheduler.schedulerClazz">
+        <description><![CDATA[$scheduler.description]]></description>
+         #if ( $scheduler.targetObject )
+        <property name="targetObject" ref="$scheduler.targetObject"/>
+        #end
+        <property name="threadCount" value="$scheduler.threadCount"/>
+        <property name="timeList">
+            <list>
+            #foreach( $schedulerList in $scheduler.sechdulerList )
+                <value>$schedulerList.getValue()</value>
+            #end
+            </list>
+        </property>
+    </bean>
+#end
+</beans>

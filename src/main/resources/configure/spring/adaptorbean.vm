@@ -1,0 +1,21 @@
+<beans>
+#foreach( $adbean in $data )
+	<bean id="$adbean.id" class="$adbean.clazz">
+		<description><![CDATA[$adbean.description]]></description>
+        <property name="adaptorName" value="$adbean.adaptorName"/>
+        <property name="port" value="$adbean.port"/>
+        <property name="heartBeatInterval" value="$adbean.heartBeatInterval"/>
+        <property name="socketTimeOut" value="$adbean.socketTimeOut"/>
+        #if ( $adbean.haBeanInfo )
+        <property name="haBeanInfo" ref="$adbean.haBeanInfo"/>
+        #end
+        <property name="netChkList">
+        	<list>
+            #foreach( $netChkList in $adbean.valueList )
+                <value>$netChkList</value>
+            #end
+            </list>
+        </property>
+    </bean>
+#end
+</beans>

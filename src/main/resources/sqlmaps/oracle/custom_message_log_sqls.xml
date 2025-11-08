@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+    
+<sqlMap namespace="custom_message_log">
+<!-- 	<select id="selectAllCustomMessageLogs" resultClass="HashMap" -->
+<!-- 		parameterClass="HashMap"> -->
+<!-- 		<![CDATA[ -->
+<!-- 		SELECT SEQ, TX_ID, IF_ID, START_DATE, END_DATE, RESULT_CODE, ESB_HOST, (END_DATE-START_DATE) TURNAROUND_DT -->
+<!-- 		FROM TRACE_MESSAGE -->
+<!-- 		]]> -->
+
+<!-- 		<dynamic prepend="where"> -->
+<!-- 			<isNotNull property="STATUS_INFO"> -->
+<!-- 				<isNotEqual property="STATUS_INFO" compareValue="" -->
+<!-- 					prepend="and"> -->
+<!-- 					<![CDATA[ -->
+<!-- 						RESULT_CODE like '%'|| #STATUS_INFO# ||'%'  -->
+<!-- 					]]> -->
+<!-- 				</isNotEqual> -->
+<!-- 			</isNotNull> -->
+
+<!-- 			<isNotNull property="SEARCH_STA_DATE"> -->
+<!-- 				<isNotEqual property="SEARCH_STA_DATE" compareValue="" -->
+<!-- 					prepend="and"> -->
+<!-- 				<![CDATA[ -->
+<!-- 		    		START_DATE >= to_char( to_timestamp( #SEARCH_STA_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' )    -->
+<!-- 				]]> -->
+<!-- 				</isNotEqual> -->
+<!-- 			</isNotNull> -->
+			
+<!-- 			<isNotNull property="SEARCH_END_DATE"> -->
+<!-- 				<isNotEqual property="SEARCH_END_DATE" compareValue="" -->
+<!-- 					prepend="and"> -->
+<!-- 				<![CDATA[ -->
+<!-- 			    	to_char( to_timestamp( #SEARCH_END_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' ) >=  END_DATE   -->
+<!-- 				]]> -->
+<!-- 				</isNotEqual> -->
+<!-- 			</isNotNull> -->
+
+<!-- 			<isNotNull property="SEARCH_IF_ID"> -->
+<!-- 				<isNotEqual property="SEARCH_IF_ID" compareValue="" -->
+<!-- 					prepend="and"> -->
+<!-- 				<![CDATA[ -->
+<!-- 			    	IF_ID like '%'|| #SEARCH_IF_ID# ||'%'     -->
+<!-- 				]]> -->
+<!-- 				</isNotEqual> -->
+<!-- 			</isNotNull> -->
+
+<!-- 			<isNotNull property="SEARCH_TX_ID"> -->
+<!-- 				<isNotEqual property="SEARCH_TX_ID" compareValue="" -->
+<!-- 					prepend="and"> -->
+<!-- 				<![CDATA[ -->
+<!-- 			    	TX_ID like '%'|| #SEARCH_TX_ID# ||'%'     -->
+<!-- 				]]> -->
+<!-- 				</isNotEqual> -->
+<!-- 			</isNotNull> -->
+
+<!-- 		</dynamic> -->
+<!-- 	</select> -->
+
+	<!-- 페이징 적용된 쿼리 -->
+		<select id="selectAllCustomMessageLogs" resultClass="HashMap"
+		parameterClass="HashMap">
+		<!-- Rownum where 조건으로 페이징 설정 -->
+		<![CDATA[
+		SELECT SEQ, TX_ID, IF_ID, START_DATE, END_DATE, RESULT_CODE, ESB_HOST, (END_DATE-START_DATE) TURNAROUND_DT
+		FROM (	
+		]]>	
+		<!-- RowNum을 붙여준다  -->
+		<![CDATA[
+		SELECT SEQ, TX_ID, IF_ID, START_DATE, END_DATE, RESULT_CODE, ESB_HOST, (END_DATE-START_DATE) TURNAROUND_DT, ROWNUM rn
+		FROM (	
+		]]>	
+		<!-- 필요한 데이터 정리 -->
+		<![CDATA[
+		SELECT SEQ, TX_ID, IF_ID, START_DATE, END_DATE, RESULT_CODE, ESB_HOST, (END_DATE-START_DATE) TURNAROUND_DT
+		FROM TRACE_MESSAGE
+		]]>
+
+		<dynamic prepend="where">
+			<isNotNull property="STATUS_INFO">
+				<isNotEqual property="STATUS_INFO" compareValue=""
+					prepend="and">
+					<![CDATA[
+						RESULT_CODE like '%'|| #STATUS_INFO# ||'%' 
+					]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_STA_DATE">
+				<isNotEqual property="SEARCH_STA_DATE" compareValue=""
+					prepend="and">
+				<![CDATA[
+		    		START_DATE >= to_char( to_timestamp( #SEARCH_STA_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' )
+				]]>
+				</isNotEqual>
+			</isNotNull>
+			
+			<isNotNull property="SEARCH_END_DATE">
+				<isNotEqual property="SEARCH_END_DATE" compareValue=""
+					prepend="and">
+				<![CDATA[
+ 			    	to_char( to_timestamp( #SEARCH_END_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' ) >=  END_DATE
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_IF_ID">
+				<isNotEqual property="SEARCH_IF_ID" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	IF_ID like '%'|| #SEARCH_IF_ID# ||'%'    
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_TX_ID">
+				<isNotEqual property="SEARCH_TX_ID" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	TX_ID like '%'|| #SEARCH_TX_ID# ||'%'    
+				]]>
+				</isNotEqual>
+			</isNotNull>			
+		</dynamic>
+		<!-- 여기서 order by 까지 진행했다고 가정 -->		
+		<![CDATA[
+		) a
+		]]>		
+		<!-- /RowNum을 붙여준다 -->
+		<![CDATA[
+		) b
+		]]>	
+		<dynamic prepend="where">
+			<isNotNull property="start">
+				<isNotEqual property="start" compareValue=""
+					prepend="and">
+					<![CDATA[
+						b.RN BETWEEN #start# + 1 AND #start# + #limit#
+					]]>
+				</isNotEqual>
+			</isNotNull>	
+		</dynamic>
+		<!-- /Rownum where 조건으로 페이징 설정 -->
+	</select>
+	
+	<!-- total_count를 가져오는 쿼리 작성 -->
+		<select id="selectAllCustomMessageLogsCount" resultClass="Integer"
+		parameterClass="HashMap">
+		<![CDATA[
+		SELECT COUNT(*)
+		FROM TRACE_MESSAGE
+		]]>
+
+		<dynamic prepend="where">
+			<isNotNull property="STATUS_INFO">
+				<isNotEqual property="STATUS_INFO" compareValue=""
+					prepend="and">
+					<![CDATA[
+						RESULT_CODE like '%'|| #STATUS_INFO# ||'%' 
+					]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_STA_DATE">
+				<isNotEqual property="SEARCH_STA_DATE" compareValue=""
+					prepend="and">
+				<![CDATA[
+		    		START_DATE >= to_char( to_timestamp( #SEARCH_STA_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' )
+				]]>
+				</isNotEqual>
+			</isNotNull>
+			
+			<isNotNull property="SEARCH_END_DATE">
+				<isNotEqual property="SEARCH_END_DATE" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	to_char( to_timestamp( #SEARCH_END_DATE# , 'YYYYMMDDHH24MISS' ), 'YYYYMMDDHH24MISSFF3' ) >=  END_DATE 
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_IF_ID">
+				<isNotEqual property="SEARCH_IF_ID" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	IF_ID like '%'|| #SEARCH_IF_ID# ||'%'    
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+			<isNotNull property="SEARCH_TX_ID">
+				<isNotEqual property="SEARCH_TX_ID" compareValue=""
+					prepend="and">
+				<![CDATA[
+			    	TX_ID like '%'|| #SEARCH_TX_ID# ||'%'    
+				]]>
+				</isNotEqual>
+			</isNotNull>
+
+		</dynamic>
+	</select>
+</sqlMap>

@@ -1,0 +1,25 @@
+<beans>
+#foreach( $sap in $data )
+	<bean class="$sap.classs" id="$sap.id" destroy-method="$sap.destroyMethod">
+		<description><![CDATA[$sap.description]]></description>
+		<property name="peak_limit" value="$sap.peak_limit"/>
+		<property name="expiration_check_period" value="$sap.expiration_check_period"/>
+		<property name="lang" value="$sap.lang"/>
+		<property name="max_get_client_time" value="$sap.max_get_client_time"/>
+		<property name="passwd" value="$sap.passwd"/>
+		<property name="user" value="$sap.user"/>
+		<property name="client" value="$sap.client"/>
+		<property name="expiration_time" value="$sap.expiration_time"/>
+		<property name="pool_capacity" value="$sap.pool_capacity"/>
+		<property name="pool_check_connection" value="$sap.pool_check_connection"/>
+        #if($sap.sap_targetConnection == "Direct")
+		<property name="ashost" value="$sap.ashost"/>
+		<property name="sysnr" value="$sap.sysnr"/>
+        #else
+		<property name="mshost" value="$sap.mshost"/>
+		<property name="r3name" value="$sap.r3name"/>
+		<property name="msserv" value="$sap.msserv"/>
+		<property name="group" value="$sap.group"/>#end
+	</bean>
+#end
+</beans>

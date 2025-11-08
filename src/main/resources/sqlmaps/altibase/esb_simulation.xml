@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="simulation">
+
+	<typeAlias alias="simulationVo" type="com.indigo.web.esb.vo.SimulationVO"/>
+	<typeAlias alias="simulationPropVo" type="com.indigo.web.esb.vo.SimulationPropVO"/>
+	
+	<sql id="sm_table">INDIGO_SIMULATION_MSG</sql>
+	<sql id="sm_prop_table">INDIGO_SIMULATION_MSG_PROPERTY</sql>
+	
+	<sql id="sm_cols">
+	    sm_id, test_name, webservice_name, msg, url, gpki_dn, type
+	</sql>
+	<sql id="sm_prop_cols">
+		prop_id, prop_name, prop_value, sm_id
+	</sql>
+	
+	<select id="getSimulationDataList" parameterClass="java.util.Map" resultClass="simulationVo">
+		select t2.* from(
+		    select ROWNUM row_num, t1.* from(
+				select <include refid="sm_cols" />
+				from <include refid="sm_table" />
+				where type = #type#
+				<isEqual prepend="AND" property="searchType" compareValue="search_name">
+						test_name
+					<isNotNull property="searchString">
+							 like '%' ||#searchString#|| '%'
+					</isNotNull>
+				</isEqual>
+				<isEqual prepend="AND" property="searchType" compareValue="search_url">
+						url
+					<isNotNull property="searchString">
+							 like '%' ||#searchString#|| '%'
+					</isNotNull>
+				</isEqual>
+			)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+		ORDER BY TEST_NAME
+	</select>
+	
+	<select id="getSimulationDataTotCount" parameterClass="java.util.Map" resultClass="java.lang.Integer" >
+		select count(*) from <include refid="sm_table" />
+		where type = #type#
+			<isEqual prepend="AND" property="searchType" compareValue="search_name">
+					test_name
+				<isNotNull property="searchString">
+						 like '%' ||#searchString#|| '%'
+				</isNotNull>
+			</isEqual>
+			<isEqual prepend="AND" property="searchType" compareValue="search_url">
+					url
+				<isNotNull property="searchString">
+						 like '%' ||#searchString#|| '%'
+				</isNotNull>
+			</isEqual>
+	</select>
+	
+	<select id="getSimulationData" parameterClass="java.util.Map" resultClass="simulationVo">
+		select <include refid="sm_cols" />
+		from <include refid="sm_table" />
+		<dynamic prepend="where">
+		<isNotNull property="test_name" prepend="and">
+			test_name = #test_name#
+		</isNotNull>
+		<isNotNull property="sm_id" prepend="and">
+			sm_id = #sm_id#
+		</isNotNull>
+		</dynamic>
+	</select>
+	
+	<insert id="insertSimulation" parameterClass="simulationVo">
+		insert into <include refid="sm_table" />
+		(<include refid="sm_cols" />)
+		values (#sm_id#, #test_name#, #webservice_name#, #msg#, #url#, #gpki_dn#, #type#) 
+	</insert>
+	
+	<update id="updateSimulation" parameterClass="simulationVo">
+		update <include refid="sm_table" />
+		set
+		  test_name = #test_name#
+		, webservice_name = #webservice_name#
+		, msg = #msg#
+		, url = #url#
+		, gpki_dn = #gpki_dn#
+		where sm_id = #sm_id#
+	</update>
+	
+	<delete id="deleteSimulation" parameterClass="java.lang.String">
+		delete <include refid="sm_table" />
+		where sm_id = #value#
+	</delete>
+	
+	<select id="getSimulationPropList" resultClass="simulationPropVo" parameterClass="java.lang.String">
+		select <include refid="sm_prop_cols" />
+		from <include refid="sm_prop_table" />
+		where sm_id = #value#
+	</select>
+	
+	<delete id="deleteSimulationPropList" parameterClass="java.lang.String">
+		delete <include refid="sm_prop_table" />
+		where sm_id = #value#
+	</delete>
+	
+	<insert id="insertSimulationProp" parameterClass="simulationPropVo">
+		insert into <include refid="sm_prop_table" />
+		(<include refid="sm_prop_cols" />)
+		values(#prop_id#, #prop_name#, #prop_value#, #sm_id#)
+	</insert>
+</sqlMap>

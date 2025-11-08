@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <param name="threshold" value="DEBUG"/>
+        <layout class="org.apache.log4j.PatternLayout">
+          <param name="ConversionPattern" value="%d{ISO8601} | %-5p | %-10t | %-50.50C:%L | %m%n"/>
+        </layout>
+    </appender>
+
+    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
+        <param name="threshold" value="DEBUG"/>
+        <param name="File" value="./logs/indigoesb.log"/>
+        <param name="MaxBackupIndex" value="10"/>
+		<param name="Append" value="true"/>
+		<param name="MaxFileSize" value="10MB"/>
+        <layout class="org.apache.log4j.PatternLayout">
+	      <param name="ConversionPattern" value="%d{ISO8601} | %-5p | %-10t | %-50.50C | %m%n"/>
+          <!--param name="ConversionPattern" value="%d{ABSOLUTE} | %-5p | %-10t | %-24.24c{1} | %-30.30C %4L | %m%n"/-->
+        </layout>
+        
+	    <filter class="org.apache.log4j.varia.StringMatchFilter">
+	      <param name="StringToMatch" value="Result" />
+	      <param name="AcceptOnMatch" value="false" />
+	    </filter>
+    </appender>
+
+    <logger name="com.indigo.web">
+        <level value="DEBUG"/>
+    </logger>
+    
+    <logger name="org.springframework.security">
+        <level value="INFO"/>
+    </logger>
+    
+    <logger name="net.sf.json">
+        <level value="WARN"/>
+    </logger>
+    
+    <logger name="org.springframework.web.servlet">
+    	<level value="INFO"/>
+    </logger>
+    
+    <logger name="com.indigo.indigomq.transport">
+    	<level value="INFO"/>
+    </logger>
+
+    <logger name="com.ibatis">
+        <level value="DEBUG"/>
+    </logger>
+    
+    <logger name="org.apache.commons.beanutils">
+    	<level value="INFO"/>
+    </logger>
+    
+    <root>
+        <level value="DEBUG"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+    
+</log4j:configuration>

@@ -1,0 +1,51 @@
+/* IndigoESBWebConsole Custom ToolbarTop UI Styles */
+
+.site-toolbar-dataview {
+    margin-right: 24px;
+    border-radius: 8px;
+    border: 1px solid #d0d0d0;
+    background: #fafbfc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 8px 0 8px 0;
+    min-width: 120px;
+    transition: box-shadow 0.2s, border 0.2s;
+}
+.site-toolbar-dataview.x-view-over {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    border-color: #a0a0a0;
+}
+.site-toolbar-dataview .x-item-selected, .site-toolbar-dataview .x-dataview-item-selected {
+    /* background: linear-gradient(90deg, #ff9800 60%, #ffc107 100%); */
+    /* color: #fff !important; */
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(255,152,0,0.10);
+    outline: 2px solid #ff9800;
+    outline-offset: -2px;
+    /* transition: background 0.15s, color 0.15s, outline 0.15s; */
+}
+.site-toolbar-dataview {
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: #ffb74d #fafbfc;
+}
+/* For Webkit browsers */
+.site-toolbar-dataview::-webkit-scrollbar {
+    width: 8px;
+    background: #fafbfc;
+}
+.site-toolbar-dataview::-webkit-scrollbar-thumb {
+    /* background: #ffb74d; */
+    border-radius: 4px;
+}
+.site-toolbar-dataview .x-dataview-item {
+    margin: 4px 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    /* transition: background 0.15s, color 0.15s; */
+}
+.site-toolbar-dataview .x-dataview-item:hover {
+    /* background: #ffe0b2; */
+    color: #ff9800;
+}

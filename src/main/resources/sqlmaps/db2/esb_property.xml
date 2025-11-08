@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="property">
+
+	<typeAlias alias="propertyVO" type="com.indigo.web.esb.vo.ServicePropertyVO"/>
+	
+	<sql id="prop_table">INDIGO_PROPERTY</sql>
+	
+	<sql id="prop_cols">
+	    PROPERTY_ID, SERVICE_NAME, NAME, VALUE, INFO, IS_USE, NAME_KOR
+	</sql>
+
+    <select id="getPropertyList" parameterClass="java.util.Map" resultClass="propertyVO" >
+       select t2.*
+		from(
+		    select t1.*
+		    from(
+		        select <include refid="prop_cols" />
+		        from  <include refid="prop_table" />
+		        <dynamic prepend="WHERE">
+		    		<isNotNull prepend="and" property="service_name">
+				        service_name like '%' ||#service_name#|| '%'
+			        </isNotNull>
+			        <isNotNull prepend="and" property="name">
+				        name like '%' ||#name#|| '%'
+			        </isNotNull>
+			        <isNotNull prepend="and" property="value">
+				        value like '%' ||#value#|| '%'
+			        </isNotNull>
+			        <isNotNull property="IS_USE" prepend="and">
+					is_use = #IS_USE#
+					</isNotNull>
+				</dynamic>
+
+		    ) t1 
+		)t2
+		
+		<![CDATA[
+				order by SERVICE_NAME, NAME, IS_USE asc OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+		]]>
+		
+    </select>
+    
+    <select id="getPropertyTotalCount" resultClass="int" >
+       select count(*)
+		from(
+		    select t1.*
+		    from(
+		        select <include refid="prop_cols" />
+		        from  <include refid="prop_table" />
+		       <dynamic prepend="WHERE">
+		    		<isNotNull prepend="and" property="service_name">
+				        service_name like '%' ||#service_name#|| '%'
+			        </isNotNull>
+			        <isNotNull prepend="and" property="name">
+				        name like '%' ||#name#|| '%'
+			        </isNotNull>
+			        <isNotNull prepend="and" property="value">
+				        value like '%' ||#value#|| '%'
+			        </isNotNull>
+			        <isNotNull property="IS_USE" prepend="and">
+					is_use = #IS_USE#
+					</isNotNull>
+				</dynamic>
+		    ) t1 
+		)t2
+    </select>
+    
+    
+    <select  id="getPropertyServiceNameList" parameterClass="java.util.Map" resultClass="propertyVO">
+    
+    	select x.* 
+   			from(
+    			select t2.* 
+            		from(
+                		select t1.* from(
+                    		select distinct(SERVICE_NAME) from <include refid="prop_table" />
+                      		group by SERVICE_NAME
+                		)t1 
+                    <dynamic prepend="WHERE">
+                        <isNotNull property="SEARCHSTRING" prepend="and">
+                            SERVICE_NAME like '%' ||#SEARCHSTRING#|| '%'
+                        </isNotNull>
+                    </dynamic>
+             
+            	)t2
+            ) x
+            <![CDATA[
+                    order by upper(SERVICE_NAME) OFFSET #SKIP_INDEX# ROWS FETCH first #MAX_ROW# ROW ONLY
+            ]]>
+		
+		
+    </select>
+    
+    <select id="getPropertyServiceNameListTotCnt" resultClass="int" >
+	  	 	select count(distinct(SERVICE_NAME)) from <include refid="prop_table" />
+	  	 	<dynamic prepend="WHERE">
+			    <isNotEmpty property="SEARCHSTRING" prepend="and">
+					SERVICE_NAME like '%' ||#SEARCHSTRING#|| '%'
+				</isNotEmpty>
+			</dynamic>
+    </select>
+    
+    <select id="getProperty" parameterClass="String" resultClass="propertyVO">
+        select *
+        from   <include refid="prop_table" />
+        	where property_id = #property_id#
+	</select>
+	
+	<insert id="insertProperty" parameterClass="propertyVO">
+		insert into <include refid="prop_table" /> 
+		(property_id, service_name, name, value, info, is_use, name_kor)
+		values (#property_id:VARCHAR#, #service_name:VARCHAR#, #name:VARCHAR#, #value:VARCHAR#, #info:VARCHAR#, #is_use:char#, #name_kor:VARCHAR#)
+	</insert>
+	
+	<update id="updateProperty" parameterClass="propertyVO">
+		update <include refid="prop_table" />
+		set
+		  service_name = #service_name#
+		, name = #name#
+		, value = #value#
+		, info = #info#
+		, is_use = #is_use#
+		, name_kor = #name_kor#
+		where property_id = #property_id#
+	</update>
+	
+	<delete id="deleteProperty" parameterClass="String">
+		delete from <include refid="prop_table" /> 
+		where property_id = #property_id#
+	</delete>
+   
+</sqlMap>

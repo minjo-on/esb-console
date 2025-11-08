@@ -1,0 +1,21 @@
+#--------- DB -----------------------------
+jdbc.db=$data.dbType
+jdbc.driver=$data.driver
+jdbc.url=$data.url
+jdbc.username=$data.username
+jdbc.password=$data.password
+ping.query=$data.query
+
+#--------- Template -----------------------------
+log.jdbc.db=$data.dbType
+log.jdbc.driver=$data.driver
+log.jdbc.url=$data.url
+log.jdbc.username=$data.username
+log.jdbc.password=$data.password
+log.ping.query=$data.query
+
+
+# configuration on which file to use for IMS statistics and route info management.
+# use ext_ims.xml and eai_interface.xml for default/ext_ims_template.xml and eai_interface_template.xml for template tables.
+ims.queryFile = ext_ims.xml
+route.queryFile = eai_interface.xml

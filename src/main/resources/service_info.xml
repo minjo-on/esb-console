@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<root>
+	<service name="cxf-demo4-sa">
+		<mapping_names>
+			<row>
+				<eng_name>test1</eng_name>
+				<kor_name>cxf 데모 시나리오 4번</kor_name>
+			</row>
+		</mapping_names>
+	</service>
+</root>

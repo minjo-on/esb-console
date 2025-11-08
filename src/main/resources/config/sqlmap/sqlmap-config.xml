@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMapConfig
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map Config 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+
+	<properties resource="jdbc.properties" />
+
+	<!-- there are plenty of other optional settings, see the ibatis-sql-maps doc -->
+	<settings cacheModelsEnabled="true"
+	          enhancementEnabled="true"
+		      lazyLoadingEnabled="true"
+		      errorTracingEnabled="false"
+		      maxRequests="32"
+		      maxSessions="10"
+		      maxTransactions="5"
+		      useStatementNamespaces="true" />
+
+	<typeAlias alias="declob" type="com.indigo.web.common.DerbyClobTypeHandler"/>
+	<typeAlias type="com.indigo.web.common.StringBlobTypeHandler" alias="myblob"/>
+	<typeAlias type="com.indigo.web.common.StringClobTypeHandler" alias="myclob"/>
+
+	<!--  <transactionManager type="JDBC">
+	    <dataSource type="DBCP">
+	      <property name="driverClassName"   value="com.tmax.tibero.jdbc.TbDriver"  />
+	      <property name="url"               value="jdbc:tibero:thin:@localhost:8629:tibero"   />
+	      <property name="username"          value="indigo" />
+	      <property name="password"          value="indigo" />
+		  <property name="defaultAutoCommit" value="true"/>
+          <property name="maxWait" value="-1"/>
+          <property name="initialSize" value="4"/>
+          <property name="maxActive" value="8"/>
+          <property name="minIdle" value="4"/>
+          <property name="maxIdle" value="8"/>
+          <property name="validationQuery" value="select sysdate from dual"/>
+          <property name="testOnBorrow" value="true"/>
+          <property name="testOnReturn" value="false"/>
+          <property name="testWhileIdle" value="false"/>
+          <property name="timeBetweenEvictionRunsMillis" value="7200000"/>
+          <property name="minEvictableIdleTimeMillis" value="1800000"/>
+          <property name="numTestsPerEvictionRun" value="3"/>
+	    </dataSource>
+	</transactionManager> -->
+
+	<sqlMap resource="sqlmaps/${jdbc.db}/indigo_code.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/indigo_user.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/indigo_group.xml" />
+	<sqlMap resource="sqlmaps/indigo_folder.xml" />
+	<sqlMap resource="sqlmaps/eai_product.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_imanager.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_instance.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_project.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_monitor.xml" />
+	<sqlMap resource="sqlmaps/eai_deploy_mapping.xml" />
+	<sqlMap resource="sqlmaps/eai_iservice.xml" />
+	<sqlMap resource="sqlmaps/eai_host.xml" />
+	<sqlMap resource="sqlmaps/eai_sms.xml" />
+
+	<sqlMap resource="sqlmaps/${jdbc.db}/esb_property.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/esb_simulation.xml"/>
+	<sqlMap resource="sqlmaps/esb_sa.xml" />
+	<sqlMap resource="sqlmaps/esb_su.xml" />
+	<sqlMap resource="sqlmaps/esb_endpoint.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/esb_errorchecklist.xml"/>
+
+	<sqlMap resource="sqlmaps/${jdbc.db}/esb_isa.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/esb_me.xml" />
+
+<!-- 	<sqlMap resource="sqlmaps/${jdbc.db}/messagetraced.xml" /> -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_imcharger.xml" /><!-- 2012.03.07 -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/${route.queryFile}" />
+	<!-- 메인화면 -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/notify.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/notice.xml" />
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/indigo_sms.xml" /> -->
+
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/eai_imcharger.xml" /> -->
+
+
+	<sqlMap resource="sqlmaps/${jdbc.db}/lib_batch_update.xml"/> 
+	
+	<!-- FormalWs -->
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/formalws.xml" /> test를 위한 주석-->
+
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/interfaceTotal.xml" /> -->
+	<!-- BusinessDay -->
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/indigo_calendar.xml" /> -->
+
+	<!-- Interface Statistics -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_interface_statistics.xml" />
+
+	<!-- popup history -->
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/indigo_popup_history.xml" /> -->
+
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/esb_monitor.xml" /> test를 위한 주석-->
+	
+	<!-- 통합검색 -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_integrated_search.xml" />
+	<!-- 공통리소스 -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/eai_common_resource.xml" />
+	<!-- ESB 운영 현황 -->
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/eai_operational_status.xml" /> -->
+
+	<sqlMap resource="sqlmaps/security.xml" />
+	
+	
+	<sqlMap resource="sqlmaps/${jdbc.db}/esb_mainsearch.xml"/>
+	
+	<!-- draw2d -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/modeler-drawcanas.xml"/>
+	
+	<!-- 인터페이스 권한 관리 -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/interfacectr.xml"/>
+	
+	<!-- 메인화면 쿼리 
+	<sqlMap resource="sqlmaps/${jdbc.db}/interface_group.xml"/>
+	<sqlMap resource="sqlmaps/${jdbc.db}/indigo_ins.xml"/>
+	-->
+	<!-- 인터페이스-기관 매핑 
+	<sqlMap resource="sqlmaps/${jdbc.db}/mapping_group.xml"/>-->
+	
+	<!-- 메시지 그룹 
+	<sqlMap resource="sqlmaps/${jdbc.db}/message_group.xml"/>-->
+	
+		
+	<!-- 메시지 이력 (추후에 log.jdbc를 사용해야 함)-->
+	<sqlMap resource="sqlmaps/${jdbc.db}/${ims.queryFile}" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/messagetraced.xml" />
+	<sqlMap resource="sqlmaps/${jdbc.db}/user_if_mapp_info.xml" />
+	
+	<!-- CUSTOM MESSAGE LOG 임시 SQL 매핑--> 
+	<sqlMap resource="sqlmaps/${jdbc.db}/custom_message_log_sqls.xml"/>
+	
+	<!-- FILE TRANSFER META -->
+	<sqlMap resource="sqlmaps/${jdbc.db}/file_meta.xml"/>
+
+    <!-- DB SELECT CONDITION -->
+    <sqlMap resource="sqlmaps/${jdbc.db}/db_select_condition.xml"/>
+    <sqlMap resource="sqlmaps/${jdbc.db}/db_select_interface.xml"/>
+
+	<!-- <sqlMap resource="sqlmaps/${jdbc.db}/indigo_report.xml"/> -->
+</sqlMapConfig>

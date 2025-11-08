@@ -1,0 +1,751 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="ext_ims">
+
+	<select id="getRecvData" parameterClass="string" resultClass="java.util.HashMap">
+		select Z.*,
+		NVL((SELECT IF_NAME FROM ESB_TEMP_IF_MASTER WHERE IF_ID = Z.IF_ID), Z.IF_ID) AS IF_NAME
+		from ESB_TEMP_IF_MASTER_LOG Z
+		where TX_ID = #value#
+	</select>
+
+	<resultMap class="java.util.LinkedHashMap" id="getConvertResultDataPopUpResult">
+        <result column="TX_ID" property="TX_ID" />
+        <result column="CVT_STATUS_CD" property="CVT_STATUS_CD" />
+        <result column="MSG_CVT_DT" property="MSG_CVT_DT" />
+        <result column="ERR_CNT" property="ERR_CNT" />
+        <result column="ERR_MSG" property="ERR_MSG" jdbcType="BLOB" javaType="[B" typeHandler="myblob"/>
+    </resultMap>
+
+
+	<select id="getMaxMsgRcvDt" parameterClass="string" resultClass="string">
+		select MAX(DEST_RCV_DATE) from ESB_TEMP_IF_DEST_LOG where tx_id=#value#
+	</select>
+	
+	<select id="getConvertResultData" parameterClass="string" resultMap="getConvertResultDataPopUpResult">
+		select *
+		from   IMS_MSG_HUB_CVT_RESULT_LOG
+		where  TX_ID = #value#
+	</select>
+
+	<select id="getSendData" parameterClass="map" resultClass="java.util.HashMap">
+		select *
+		from   IMS_MSG_HUB_DETAIL_LOG
+		where  TX_ID   = #TX_ID#
+		and    DEST_ID = #DEST_ID#
+	</select>
+	
+	<resultMap class="java.util.LinkedHashMap" id="getMessageResult">
+        <result column="TX_ID" property="TX_ID" />
+        <result column="DEST_ID" property="DEST_ID" />
+        <result column="STATUS_CD" property="STATUS_CD" />
+        <result column="SND_MSG" property="SND_MSG"/>
+        <result column="ERR_CNT" property="ERR_CNT"/>
+        <result column="ERR_MSG" property="ERR_MSG"/>
+        <result column="HEADER_INFO" property="HEADER_INFO" />
+    </resultMap>
+	
+	<!-- <select id="getMessage" parameterClass="map" resultMap="getMessageResult">
+		SELECT TX_ID
+				, DEST_ID
+				, SEND_MESSAGE AS SND_MSG
+				, DEST_RESULT AS STATUS_CD
+				, DEST_ERROR_COUNT AS ERR_CNT
+				, RESULT_MESSAGE AS ERR_MSG
+		FROM   ESB_TEMP_IF_DEST_LOG
+		WHERE  TX_ID   = #TX_ID#
+		AND    DEST_ID = #DEST_ID#
+	</select> -->
+
+	<select id="getMessage" parameterClass="map" resultMap="getMessageResult">
+		SELECT
+		DES.TX_ID
+		, DES.DEST_ID
+		, DES.SEND_MESSAGE AS SND_MSG
+		, DES.DEST_RESULT AS STATUS_CD
+		, DES.DEST_ERROR_COUNT AS ERR_CNT
+		, DES.RESULT_MESSAGE AS ERR_MSG
+		, MAS.TX_PROPERTY AS HEADER_INFO
+		FROM ESB_TEMP_IF_DEST_LOG DES INNER
+		JOIN ESB_TEMP_IF_MASTER_LOG MAS
+		ON DES.TX_ID = MAS.TX_ID
+		WHERE MAS.TX_ID
+		= #TX_ID#
+		AND DES.DEST_ID = #DEST_ID#
+	</select>
+
+	<resultMap class="java.util.LinkedHashMap" id="getSendResultDataPopUpResult">
+        <result column="TX_ID" property="TX_ID" />
+        <result column="DEST_ID" property="DEST_ID" />
+        <result column="DEST_RESULT" property="STATUS_CD" />
+        <result column="DEST_RCV_DATE" property="MSG_RCV_DT" />
+        <result column="DEST_ERROR_COUNT" property="ERR_CNT" />
+        <result column="RESULT_MESSAGE" property="ERR_MSG"/>
+    </resultMap>
+	
+	<select id="getSendResultData" parameterClass="map" resultMap="getSendResultDataPopUpResult">
+		select *
+		from   ESB_TEMP_IF_DEST_LOG
+		where  TX_ID   = #TX_ID#
+		and    DEST_ID = #DEST_ID#
+	</select>
+
+
+	<!-- retry -->
+	<resultMap class="java.util.LinkedHashMap" id="getRetryMessageInfoResult">
+		<result column="SEND_MESSAGE" property="SND_MSG"/>
+	</resultMap>
+	<select id="getRetryMessageInfo" parameterClass="java.util.HashMap" resultMap="getRetryMessageInfoResult">
+		SELECT * FROM ESB_TEMP_IF_DEST_LOG
+		WHERE TX_ID = #TX_ID#
+		AND DEST_ID = #DEST_ID#
+	</select>
+	
+
+	<!-- ################# 수신 메시지 조회 ################ -->
+	<!-- TODO: 사용 여부 확인 필요 -->
+	<select id="getRecvMsgDataListByCondition" parameterClass="map" resultClass="java.util.HashMap">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT ROWNUM ROW_NUM,
+    				   S.*,
+    				   COUNT(*) OVER () AS TOTCNT
+        		FROM   (
+						SELECT	 A.*,
+							  	 B.DEST_RESULT, /* changed from B.CVT_STATUS_CD */
+							  	 B.REACTION_DATE, /* changed from B.MSG_CVT_DT */
+							  	 B.ERR_CNT, /* changed from B.MSG_CVT_DT */
+							  	 NVL((SELECT IF_NAME FROM ESB_TEMP_IF_MASTER WHERE IF_ID=A.IF_ID), A.IF_ID) IF_NAME
+						FROM	 ESB_TEMP_IF_MASTER_LOG A
+							     LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG B ON A.TX_ID = B.TX_ID
+							     LEFT OUTER JOIN USER_IF_MAPP_INFO C ON A.IF_ID = C.IF_ID
+						<dynamic prepend="WHERE">
+						    <isNotEmpty prepend="AND" property="TX_ID">
+						    A.TX_ID = #TX_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="AND" property="STA_DATE">
+						    A.TX_START_DATE between #STA_DATE# AND #END_DATE# /* changed from A.MSG_CREATE_DT */
+						    </isNotEmpty>
+						    <isNotEmpty property="STATUS_CD">
+						    	<isEqual prepend="AND" property="STATUS_CD" compareValue="N">
+						    B.DEST_RESULT IS NULL /* changed from B.CVT_STATUS_CD */
+						    	</isEqual>
+						    	<isNotEqual prepend="AND" property="STATUS_CD" compareValue="N">
+						    B.DEST_RESULT = #STATUS_CD#
+						    	</isNotEqual>
+						    </isNotEmpty>
+						    <isNotEmpty property="USER_AUTH">
+						    	<isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+						    		C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+						    	</isEqual>
+						    </isNotEmpty>
+						    <isNotEmpty prepend="AND" property="IF_ID">
+						    A.IF_ID = #IF_ID#
+						    </isNotEmpty>
+
+						</dynamic>
+						ORDER BY A.TX_START_DATE ASC, A.TX_HUB_RCV_DATE ASC /* changed from A.HUB_RCV_DT */
+
+        				) S
+        				  <isNotEmpty prepend="WHERE" property="SEARCH_IF_NAME" >
+						    S.IF_NAME LIKE '%' || #SEARCH_IF_NAME# || '%'
+						   </isNotEmpty>
+				) Z
+		<![CDATA[
+		WHERE  ROW_NUM > #SKIP_INDEX#
+		AND    ROW_NUM <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+
+	<!-- TODO: 사용 여부 확인 필요 -->
+	<select id="getRecvMsgDataListCountByCondition" parameterClass="map" resultClass="Integer">
+		select count(*)
+		from ESB_TEMP_IF_MASTER_LOG A left outer join ESB_TEMP_IF_DEST_LOG B
+		     on A.TX_ID = B.TX_ID
+		<dynamic prepend="where">
+		    <isNotEmpty prepend="and" property="TX_ID">
+		    A.TX_ID = #TX_ID#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="and" property="STA_DATE">
+		    A.TX_START_DATE between #STA_DATE# AND #END_DATE#
+		    </isNotEmpty>
+		    <isNotEmpty property="STATUS_CD">
+	    	<isEqual prepend="and" property="STATUS_CD" compareValue="N">
+		    B.DEST_RESULT is null
+	    	</isEqual>
+			<isNotEqual prepend="and" property="STATUS_CD" compareValue="N">
+		    B.DEST_RESULT = #STATUS_CD#
+			</isNotEqual>
+		    <isNotEmpty property="USER_AUTH">
+		    	<isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+		    		C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+		    	</isEqual>
+		    </isNotEmpty>
+		    </isNotEmpty>
+		    <isNotEmpty prepend="and" property="IF_ID">
+		    A.IF_ID = #IF_ID#
+		    </isNotEmpty>
+		</dynamic>
+	</select>
+
+
+	<!-- ################# 송신 메시지 조회 ################ -->
+
+	<select id="getSendMsgDataListByCondition" parameterClass="map" resultClass="java.util.HashMap">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT S.*
+        		FROM   (
+						SELECT M.*
+								, M.TX_START_DATE AS MSG_CREATE_DT
+								, M.TX_HUB_RCV_DATE AS HUB_RCV_DT
+					            , M.TX_HUB_RCV_DATE AS HUB_CVT_DT
+					            , M.TX_COUNT AS SND_CNT
+					            , D.DEST_ID
+					            , D.DEST_RCV_DATE AS MSG_RCV_DT
+								, 'S' AS CVT_STATUS_CD
+					            , D.DEST_RESULT AS STATUS_CD
+					            , D.DEST_ERROR_COUNT AS ERR_CNT
+				        FROM   ESB_TEMP_IF_MASTER_LOG M
+				        		LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON M.TX_ID = D.TX_ID
+				        <dynamic prepend="where">
+						    <isNotEmpty prepend="and" property="TX_ID">
+						    M.TX_ID = #TX_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="STA_DATE">
+						    M.TX_START_DATE between #STA_DATE# AND #END_DATE#
+						    </isNotEmpty>
+						    <isNotEmpty property="STATUS_CD">
+						    	<isEqual prepend="and" property="STATUS_CD" compareValue="N">
+						    D.DEST_RESULT is null
+						    	</isEqual>
+						    	<isNotEqual prepend="and" property="STATUS_CD" compareValue="N">
+						    D.DEST_RESULT = #STATUS_CD#
+						    	</isNotEqual>
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="IF_ID">
+						    M.IF_ID = #IF_ID#
+						    </isNotEmpty>
+						</dynamic>
+						order by M.TX_START_DATE ASC, D.DEST_RCV_DATE ASC
+        				) S
+				) Z
+	</select>
+	
+	<select id="getSendMsgDataBasicInfoByCondition" parameterClass="map" resultClass="java.util.HashMap">
+    	SELECT Z.*
+    	FROM   (
+    			SELECT rownum as ROW_NUM, S.*
+        		FROM   (
+						select M.IF_ID
+								, R.SYSTEM_ID AS SND_CD
+								, DR.SYSTEM_ID AS RCV_CD
+								, M.TX_COUNT AS SND_CNT
+								, M.TX_START_DATE AS MSG_CREATE_DT
+								, M.TX_HUB_RCV_DATE
+								, M.TX_ID, D.DEST_ID
+								, D.DEST_RESULT AS STATUS_CD
+								, D.DEST_RCV_DATE AS MSG_RCV_DT
+								, D.DEST_ERROR_COUNT AS ERR_CNT
+				        	    , NVL(R.IF_NAME, M.IF_ID) IF_NAME
+				        	    , R.SYSTEM_NAME AS SND_NAME
+				        	    , DR.SYSTEM_NAME AS RCV_NAME
+				        from   ESB_TEMP_IF_MASTER_LOG M
+				        		LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON M.TX_ID = D.TX_ID 
+								LEFT OUTER JOIN ESB_TEMP_IF_MASTER R ON M.IF_ID = R.IF_ID
+								LEFT OUTER JOIN ESB_TEMP_IF_DEST DR ON M.IF_ID = DR.IF_ID
+						<dynamic prepend="where">
+						    <isNotEmpty prepend="and" property="TX_ID">
+						    M.TX_ID = #TX_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="STA_DATE">
+						    M.TX_START_DATE between #STA_DATE# AND #END_DATE#
+						    </isNotEmpty>
+						    <isNotEmpty property="STATUS_CD">
+						    	<isEqual prepend="and" property="STATUS_CD" compareValue="N">
+						    D.DEST_RESULT is null
+						    	</isEqual>
+						    	<isNotEqual prepend="and" property="STATUS_CD" compareValue="N">
+						    D.DEST_RESULT = #STATUS_CD#
+						    	</isNotEqual>
+						    </isNotEmpty>
+							<isNotEmpty property="USER_AUTH">
+								<isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+                      		C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+								</isEqual>
+							</isNotEmpty>
+						    <isNotEmpty prepend="and" property="IF_ID">
+						    M.IF_ID = #IF_ID#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="SND_CD">
+						    R.SYSTEM_ID = #SND_CD#
+						    </isNotEmpty>
+						    <isNotEmpty prepend="and" property="RCV_CD">
+						    DR.SYSTEM_ID = #RCV_CD#
+						    </isNotEmpty>
+						</dynamic>
+						order by M.TX_START_DATE DESC
+        				) S 
+        				<dynamic prepend ="WHERE">
+							<isNotEmpty  prepend="and" property="SND_IF_NAME"  >
+								S.SND_NAME LIKE '%' || #SND_IF_NAME# || '%'
+							</isNotEmpty>
+							<isNotEmpty  prepend="and" property="RCV_IF_NAME" >
+								S.RCV_NAME LIKE '%' || #RCV_IF_NAME# || '%'
+							</isNotEmpty>
+						</dynamic>
+
+				) Z
+		<![CDATA[
+				where  row_num = 1
+			]]>
+	</select>
+
+	<select id="getSendMsgDataListCountByCondition" parameterClass="map" resultClass="Integer">
+		select count(*)
+        from   ESB_TEMP_IF_MASTER_LOG M
+			   LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON M.TX_ID = D.TX_ID 
+			   LEFT OUTER JOIN ESB_TEMP_IF_MASTER R ON M.IF_ID = R.IF_ID
+			   LEFT OUTER JOIN USER_IF_MAPP_INFO C ON M.IF_ID = C.IF_ID
+			   LEFT OUTER JOIN ESB_TEMP_IF_DEST DR ON M.IF_ID = DR.IF_ID
+		where M.TX_ID = D.TX_ID
+		    <isNotEmpty prepend="and" property="TX_ID">
+		    M.TX_ID = #TX_ID#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="and" property="STA_DATE">
+		    M.TX_START_DATE between #STA_DATE# AND #END_DATE#
+		    </isNotEmpty>
+		    <isNotEmpty property="STATUS_CD">
+		    	<isEqual prepend="and" property="STATUS_CD" compareValue="N">
+		    D.DEST_RESULT is null
+		    	</isEqual>
+		    	<isNotEqual prepend="and" property="STATUS_CD" compareValue="N">
+		    D.DEST_RESULT = #STATUS_CD#
+		    	</isNotEqual>
+		    </isNotEmpty>
+            <isNotEmpty property="USER_AUTH">
+               <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+            C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+               </isEqual>
+            </isNotEmpty>
+		    <isNotEmpty prepend="and" property="IF_ID">
+		    M.IF_ID = #IF_ID#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="and" property="SND_CD">
+		    R.SYSTEM_ID = #SND_CD#
+		    </isNotEmpty>
+		    <isNotEmpty prepend="and" property="RCV_CD">
+		    DR.SYSTEM_ID = #RCV_CD#
+		    </isNotEmpty>
+	</select>
+
+	<!-- 템플릿 버전에 수신에러는 없음 -->
+	<update id="updateConvertStatusCd" parameterClass="map">
+		update IMS_MSG_HUB_CVT_RESULT_LOG
+		set    CVT_STATUS_CD = #STATUS_CD#
+		where  TX_ID = #TX_ID#
+	</update>
+
+	<!-- 송신 에러 상태 변경 -->
+	<update id="updateSendStatusCd" parameterClass="map">
+	    update ESB_TEMP_IF_DEST_LOG
+		set    DEST_RESULT = #STATUS_CD#
+		where  TX_ID = #TX_ID#
+		and    DEST_ID = #DEST_ID#
+	</update>
+
+
+	<!-- ########################## 통계 쿼리 ############################# -->
+	<select id="getMessageCreateStatistics" parameterClass="map" resultClass="java.util.HashMap">
+                SELECT A.IF_ID,
+                NVL((SELECT IF_NAME FROM ESB_TEMP_IF_MASTER WHERE IF_ID = A.IF_ID), A.IF_ID) AS
+                IF_NAME,
+                NVL(SUM(A.TX_COUNT), 0) - NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS MSG_CNT,
+                NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS ERR_CNT
+                FROM
+                (SELECT T.*, D.DEST_RESULT AS DEST_RESULT,
+                C.USER_ID AS USER_ID
+                FROM ESB_TEMP_IF_MASTER_LOG T
+                LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON T.TX_ID = D.TX_ID
+                LEFT OUTER JOIN USER_IF_MAPP_INFO C ON T.IF_ID = C.IF_ID
+                WHERE T.TX_START_DATE BETWEEN #STA_DATE# AND #END_DATE#
+                ) A
+                <isNotEmpty property="USER_AUTH">
+                                <isEqual property="USER_AUTH" compareValue="NORMAL">
+                                        INNER JOIN INDIGO_GROUP_MAPPING G
+                                        ON A.USER_ID = G.GROUP_ID
+                                </isEqual>
+                </isNotEmpty>
+                <dynamic prepend="WHERE">
+                        <isNotEmpty property="IF_ID">
+                                <isNotEqual prepend="AND" property="IF_ID"
+                                        compareValue="">
+                                        A.IF_ID = #IF_ID#
+                                </isNotEqual>
+                        </isNotEmpty>
+                        <isNotEmpty property="USER_AUTH">
+                                <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+                                        G.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+                                </isEqual>
+                        </isNotEmpty>
+                </dynamic>
+                GROUP BY A.IF_ID ORDER BY A.IF_ID
+        </select>
+
+	<select id="getMessageStatisticsByCodeIfId" parameterClass="map" resultClass="java.util.HashMap">
+                SELECT A.IF_ID AS C_KEY
+                , NVL((SELECT IF_NAME FROM ESB_TEMP_IF_MASTER WHERE IF_ID = A.IF_ID),
+                A.IF_ID) AS KEY_NAME
+                , NVL(SUM(A.TX_COUNT), 0) - NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS SND_CNT
+                , NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS ERR_CNT
+                FROM
+                (SELECT T.*
+                , D.DEST_RESULT AS DEST_RESULT
+                , C.USER_ID AS USER_ID
+                FROM ESB_TEMP_IF_MASTER_LOG T
+                LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON T.TX_ID = D.TX_ID
+        LEFT OUTER JOIN USER_IF_MAPP_INFO C ON
+                T.IF_ID = C.IF_ID
+                WHERE T.TX_START_DATE BETWEEN #STA_DATE# AND #END_DATE#) A
+                <isNotEmpty property="USER_AUTH">
+                                <isEqual property="USER_AUTH" compareValue="NORMAL">
+                                        INNER JOIN INDIGO_GROUP_MAPPING G
+                                        ON A.USER_ID = G.GROUP_ID
+                                </isEqual>
+                </isNotEmpty>
+                <dynamic prepend="WHERE">
+                        <isNotEmpty property="IF_ID">
+                                <isNotEqual prepend="AND" property="IF_ID"
+                                        compareValue="">
+                                        A.IF_ID = #IF_ID#
+                                </isNotEqual>
+                        </isNotEmpty>
+                        <isNotEmpty property="USER_AUTH">
+                                <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+                                        G.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+                                </isEqual>
+                        </isNotEmpty>
+                </dynamic>
+                GROUP BY A.IF_ID
+        </select>
+	
+	<select id="getMessageStatisticsByCodeSndCd" parameterClass="map" resultClass="java.util.HashMap">
+                SELECT A.SND_CD AS C_KEY
+                , A.SND_NAME AS KEY_NAME
+                , NVL(SUM(A.TX_COUNT), 0) - NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS SND_CNT
+                , NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS ERR_CNT
+                FROM (SELECT T.*, D.DEST_RESULT AS DEST_RESULT
+                , C.USER_ID
+                , L.SYSTEM_ID AS SND_CD
+                , L.SYSTEM_NAME AS SND_NAME
+                FROM ESB_TEMP_IF_MASTER_LOG T
+                LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON T.TX_ID = D.TX_ID
+                LEFT OUTER JOIN USER_IF_MAPP_INFO C ON T.IF_ID = C.IF_ID
+                LEFT OUTER JOIN ESB_TEMP_IF_MASTER L ON T.IF_ID = L.IF_ID
+                WHERE T.TX_START_DATE BETWEEN #STA_DATE# AND #END_DATE# ) A
+                <isNotEmpty property="USER_AUTH">
+                                <isEqual property="USER_AUTH" compareValue="NORMAL">
+                                        INNER JOIN INDIGO_GROUP_MAPPING G
+                                        ON A.USER_ID = G.GROUP_ID
+                                </isEqual>
+                </isNotEmpty>
+                <dynamic prepend="WHERE">
+                        <isNotEmpty property="IF_ID">
+                                <isNotEqual prepend="AND" property="IF_ID"
+                                        compareValue="">
+                                        A.IF_ID = #IF_ID#
+                                </isNotEqual>
+                        </isNotEmpty>
+                        <isNotEmpty property="USER_AUTH">
+                                <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+                                        G.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+                                </isEqual>
+                        </isNotEmpty>
+                </dynamic>
+                GROUP BY A.SND_CD, A.SND_NAME
+        </select>
+
+	<select id="getMessageStatisticsByCodeRcvCd" parameterClass="map" resultClass="java.util.HashMap">
+                SELECT A.RCV_CD AS C_KEY
+                , NVL((SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_DIV='01' AND
+                CODE_ID =A.RCV_CD), A.RCV_CD ) AS KEY_NAME
+                , NVL(SUM(A.TX_COUNT), 0) - NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS SND_CNT
+                , NVL(SUM(CASE WHEN A.DEST_RESULT = 'F' THEN A.TX_COUNT ELSE 0 END), 0) AS ERR_CNT
+                FROM (SELECT T.*
+                , L.DEST_RESULT AS DEST_RESULT
+                , C.USER_ID
+                , D.system_id as rcv_cd
+                FROM ESB_TEMP_IF_MASTER_LOG T
+                LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG L ON T.TX_ID = L.TX_ID
+                LEFT OUTER JOIN USER_IF_MAPP_INFO C ON T.IF_ID = C.IF_ID
+                left outer join esb_temp_if_dest D on t.if_id = D.if_id
+                WHERE T.tx_start_date BETWEEN #STA_DATE# AND #END_DATE#
+                ) A
+                <isNotEmpty property="USER_AUTH">
+                                <isEqual property="USER_AUTH" compareValue="NORMAL">
+                                        INNER JOIN INDIGO_GROUP_MAPPING G
+                                        ON A.USER_ID = G.GROUP_ID
+                                </isEqual>
+                </isNotEmpty>
+                <dynamic prepend="where">
+                        <isNotEmpty property="IF_ID">
+                                <isNotEqual prepend="AND" property="IF_ID"
+                                        compareValue="">
+                                        A.IF_ID = #IF_ID#
+                                </isNotEqual>
+                        </isNotEmpty>
+                        <isNotEmpty property="USER_AUTH">
+                                <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+                                        G.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+                                </isEqual>
+                        </isNotEmpty>
+                </dynamic>
+                GROUP BY A.RCV_CD
+        </select>
+
+	<!-- <select id="getMessageStatisticsBySndDateCol" parameterClass="map" resultClass="java.util.HashMap">
+		SELECT T.C_KEY
+		    , NVL(SUM(T.TX_COUNT), 0) AS SND_CNT
+		    , NVL(SUM(T.DEST_ERROR_COUNT), 0) AS ERR_CNT
+				FROM (
+					SELECT 
+					<dynamic>
+						<isEqual property="IDX1" compareValue="9">
+							SUBSTR(A.TX_START_DATE, 9, 2)
+						</isEqual>
+						<isEqual property="IDX1" compareValue="7">
+							SUBSTR(A.TX_START_DATE, 7, 2)
+						</isEqual>
+					</dynamic> AS C_KEY
+		      , A.TX_COUNT
+		      , B.DEST_ERROR_COUNT
+		FROM   ESB_TEMP_IF_MASTER_LOG A 
+			LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG B ON A.TX_ID = B.TX_ID
+			LEFT OUTER JOIN USER_IF_MAPP_INFO C ON A.IF_ID = C.IF_ID
+			LEFT OUTER JOIN ESB_TEMP_IF_MASTER M ON A.IF_ID = M.IF_ID
+			INNER JOIN INDIGO_GROUP_MAPPING G ON C.USER_ID  = G.GROUP_ID
+		WHERE  A.TX_START_DATE LIKE #DATE_STR#
+		<isNotEmpty property="SND_CD">
+			AND    M.SYSTEM_ID = #SND_CD#
+		</isNotEmpty>
+		<isNotEmpty property="IF_ID">
+			AND    A.IF_ID = #IF_ID#
+		</isNotEmpty>
+		<isNotEmpty property="USER_AUTH">
+		    <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+		     G.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+		    </isEqual>
+		</isNotEmpty>
+		) T
+		group by T.C_KEY
+		order by T.C_KEY
+	</select> -->
+
+	
+	<select id="getMessageStatisticsBySndDateCol" parameterClass="map" resultClass="java.util.HashMap">
+                SELECT T.C_KEY
+        , NVL(SUM(T.TX_COUNT), 0) - NVL(SUM(CASE WHEN T.DEST_RESULT = 'F' THEN T.TX_COUNT ELSE 0 END), 0) AS SND_CNT
+                , NVL(SUM(CASE WHEN T.DEST_RESULT = 'F' THEN T.TX_COUNT ELSE 0 END), 0) AS ERR_CNT
+                FROM (
+                SELECT
+                <dynamic>
+                        <isEqual property="IDX1" compareValue="9">
+                                SUBSTR(A.TX_START_DATE, 9, 2)
+                        </isEqual>
+                        <isEqual property="IDX1" compareValue="7">
+                                SUBSTR(A.TX_START_DATE, 7, 2)
+                        </isEqual>
+                </dynamic>
+                C_KEY
+                , A.TX_COUNT
+                , B.DEST_RESULT
+                FROM ESB_TEMP_IF_MASTER_LOG A
+                LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG B ON A.TX_ID = B.TX_ID
+                LEFT OUTER JOIN ESB_TEMP_IF_MASTER M ON A.IF_ID = M.IF_ID
+                LEFT OUTER JOIN USER_IF_MAPP_INFO C ON A.IF_ID = C.IF_ID
+                <isNotEmpty property="USER_AUTH">
+                                <isEqual property="USER_AUTH" compareValue="NORMAL">
+                                        INNER JOIN INDIGO_GROUP_MAPPING G ON C.USER_ID  = G.GROUP_ID
+                                </isEqual>
+                </isNotEmpty>
+                WHERE
+                A.TX_START_DATE LIKE #DATE_STR#
+                <isNotEmpty property="SND_CD">
+                        AND M.SYSTEM_ID = #SND_CD#
+                </isNotEmpty>
+                <isNotEmpty property="IF_ID">
+                        AND A.IF_ID = #IF_ID#
+                </isNotEmpty>
+                <isNotEmpty property="USER_AUTH">
+                        <isEqual prepend="AND" property="USER_AUTH" compareValue="NORMAL">
+                                G.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+                        </isEqual>
+                </isNotEmpty>
+                ) T
+                GROUP BY T.C_KEY
+                ORDER BY T.C_KEY
+        </select>
+
+	<!-- ################# 송수신 메시지 조회 ################ -->
+	<select id="getRecvSendDataListByCondition" parameterClass="map"
+		resultClass="java.util.HashMap">
+		SELECT M.TX_ID
+		, M.IF_ID
+		, S.IF_NAME AS IF_NAME
+		, M.TX_START_DATE AS MSG_CREATE_DT
+		, D.DEST_RCV_DATE AS MSG_RCV_DT
+		, M.TX_COUNT AS MSG_CNT
+		, D.DEST_ERROR_COUNT AS TOTAL_ERR_CNT
+		, D.DEST_RESULT AS STATUS_CD
+		, M.ESB_HOST
+		, S.SYSTEM_ID AS SND_CD
+		, S.SYSTEM_NAME AS SND_NAME
+		, R.SYSTEM_ID AS RCV_CD
+		, R.SYSTEM_NAME AS RCV_NAME
+		FROM ESB_TEMP_IF_MASTER_LOG M
+		LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON M.TX_ID = D.TX_ID
+		LEFT OUTER JOIN ESB_TEMP_IF_MASTER S ON M.IF_ID = S.IF_ID
+		LEFT OUTER JOIN ESB_TEMP_IF_DEST R ON M.IF_ID = R.IF_ID
+		LEFT OUTER JOIN USER_IF_MAPP_INFO MAP ON M.IF_ID = MAP.IF_ID
+		<isNotEmpty property="USER_AUTH">
+			<isEqual property="USER_AUTH" compareValue="NORMAL">
+				INNER JOIN INDIGO_GROUP_MAPPING C ON MAP.USER_ID = C.GROUP_ID
+			</isEqual>
+		</isNotEmpty>
+		<dynamic prepend="where">
+			<isNotEmpty prepend="AND" property="USER_AUTH">
+				<isEqual property="USER_AUTH" compareValue="NORMAL">
+					1=1
+					AND C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+				</isEqual>
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="TX_ID">
+				M.TX_ID = #TX_ID#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="STA_DATE">
+				M.TX_START_DATE between #STA_DATE# AND #END_DATE#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="IF_ID">
+				M.IF_ID = #IF_ID#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="STATUS_CD">
+				D.DEST_RESULT = #STATUS_CD#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="SND_CD">
+				S.SYSTEM_ID = #SND_CD#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="RCV_CD">
+				R.SYSTEM_ID = #RCV_CD#
+			</isNotEmpty>
+			<!-- 모든 그룹 조건이 아닐 때 그룹 아이디 별 필터 추가 -->
+			<isNotEmpty prepend="and" property="GROUP_ID">
+				<isNotEqual property="GROUP_ID" compareValue="ALL">
+					MAP.USER_ID = #GROUP_ID#
+				</isNotEqual>
+			</isNotEmpty>
+		</dynamic>
+		ORDER BY M.TX_START_DATE DESC
+	</select>
+	
+	<select id="getRecvSendDataListConutByCondition" parameterClass="map"
+		resultClass="Integer">
+		SELECT COUNT(*)
+		FROM ESB_TEMP_IF_MASTER_LOG M
+		LEFT OUTER JOIN ESB_TEMP_IF_DEST_LOG D ON M.TX_ID = D.TX_ID
+		LEFT OUTER JOIN ESB_TEMP_IF_MASTER S ON M.IF_ID = S.IF_ID
+		LEFT OUTER JOIN ESB_TEMP_IF_DEST R ON M.IF_ID = R.IF_ID
+		LEFT OUTER JOIN USER_IF_MAPP_INFO MAP ON M.IF_ID = MAP.IF_ID
+		<isNotEmpty property="USER_AUTH">
+			<isEqual property="USER_AUTH" compareValue="NORMAL">
+				INNER JOIN INDIGO_GROUP_MAPPING C ON MAP.USER_ID = C.GROUP_ID
+			</isEqual>
+		</isNotEmpty>
+		<dynamic prepend="where">
+			<isNotEmpty prepend="AND" property="USER_AUTH">
+				<isEqual property="USER_AUTH" compareValue="NORMAL">
+					1=1
+					AND C.USER_ID = #USER_ID:VARCHAR:NO_ENTRY#
+				</isEqual>
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="TX_ID">
+				M.TX_ID = #TX_ID#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="STA_DATE">
+				M.TX_START_DATE between #STA_DATE# AND #END_DATE#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="IF_ID">
+				M.IF_ID = #IF_ID#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="STATUS_CD">
+				D.DEST_RESULT = #STATUS_CD#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="SND_CD">
+				S.SYSTEM_ID = #SND_CD#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="RCV_CD">
+				R.SYSTEM_ID = #RCV_CD#
+			</isNotEmpty>
+			<!-- 모든 그룹 조건이 아닐 때 그룹 아이디 별 필터 추가 -->
+			<isNotEmpty prepend="and" property="GROUP_ID">
+				<isNotEqual property="GROUP_ID" compareValue="ALL">
+					MAP.USER_ID = #GROUP_ID#
+				</isNotEqual>
+			</isNotEmpty>
+		</dynamic>
+	</select>
+
+	<select id="getTodaySendAmountConutByCondition" parameterClass="map"
+		resultClass="java.util.HashMap">
+		SELECT SUM(M.TX_COUNT) AS TOT_COUNT,
+		SUM(CASE
+		WHEN DEST_RESULT = 'S' THEN M.TX_COUNT
+		ELSE 0
+		END) AS SUCCESS,
+		SUM(CASE
+		WHEN DEST_RESULT = 'P' THEN M.TX_COUNT
+		ELSE 0
+		END) AS QUEUEING,
+		SUM(CASE
+		WHEN DEST_RESULT = 'F' THEN M.TX_COUNT
+		ELSE 0
+		END) AS ERR_CNT
+		FROM ESB_TEMP_IF_MASTER_LOG M left outer join ESB_TEMP_IF_DEST_LOG D ON
+		M.TX_ID = D.TX_ID
+		where M.TX_START_DATE between #STA_DATE# AND #END_DATE#
+	</select>
+	
+	<!-- TODO: 사용 여부 확인 필요 -->
+	<update id="DETAIL_UPDATE_CVT_DATE" parameterClass="java.util.HashMap" >
+		update IMS_MSG_HUB_DETAIL_LOG 
+		set 
+			HUB_CVT_DT		= #HUB_CVT_DT#
+		where
+		   	TX_ID 			=  #TX_ID#
+		and DEST_ID			= #DEST_ID# 
+	</update>
+	
+	<update id="RESULT_UPDATE" parameterClass="java.util.HashMap" >
+		update ESB_TEMP_IF_DEST_LOG 
+		set 
+			DEST_RESULT 		= #STATUS_CD#, 
+			DEST_RCV_DATE		= #MSG_RCV_DT#, 
+			DEST_ERROR_COUNT 	= #ERR_CNT#, 
+			RESULT_MESSAGE 		= #ERR_MSG#
+		where
+		   		TX_ID 	= #TX_ID#	
+		    AND DEST_ID = #DEST_ID#
+	</update>
+	
+	<update id="RESULT_RETRY_CNT_UPDATE" parameterClass="java.util.HashMap" >
+		update ESB_TEMP_IF_DEST_LOG 
+		set 
+		    REACTION_CNT 	= RETRY_CNT+1,
+			DEST_RESULT 	= #STATUS_CD#
+		where
+		   		TX_ID 	= #TX_ID#
+		    AND DEST_ID = #DEST_ID#
+	</update>
+</sqlMap>

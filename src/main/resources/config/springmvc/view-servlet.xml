@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+						http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd"
+	xmlns:mvc="http://www.springframework.org/schema/mvc">
+
+
+	<!--
+        - This bean configures the 'prefix' and 'suffix' properties of 
+        - InternalResourceViewResolver, which resolves logical view names 
+        - returned by Controllers. For example, a logical view name of "vets" 
+        - will be mapped to "/WEB-INF/jsp/vets.jsp".
+    -->
+	<mvc:resources mapping="/indigoesb/**" location="/indigoesb/" />
+	<mvc:resources mapping="uri" location="indigoesb" />
+    <mvc:annotation-driven />
+    <mvc:default-servlet-handler/>
+    <bean class="org.springframework.web.servlet.view.BeanNameViewResolver"	p:order="0" />
+
+	<bean class="org.springframework.web.servlet.view.UrlBasedViewResolver"
+		p:order="1" p:viewClass="org.springframework.web.servlet.view.JstlView"
+		p:prefix="" p:suffix=".jsp" />
+	
+	
+	<!--  by pass view -->
+	<bean id="urlFilenameViewController" class="org.springframework.web.servlet.mvc.UrlFilenameViewController"/>
+	<bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+		<property name="order" value="1"/>
+		<property name="mappings">
+			 <props>
+		       <prop key="*.html">urlFilenameViewController</prop>      
+		      </props>
+		</property>
+	</bean>
+	
+	
+	<!--
+	ajax view a single xml rendering 
+	-->
+	<bean name="xmlView"  class="com.indigo.web.view.XMLView">
+    	<property name="contentType">
+     	 	<value>text/xml;charset=utf-8</value>
+        </property>
+    </bean> 
+    
+    <!--
+	ajax view a single JSON rendering 
+	-->
+    <bean name="jsonView"  class="com.indigo.web.view.JSONView">
+    	<property name="contentType">
+     	 	<value>text/xml;charset=utf-8</value>
+        </property>
+    </bean>
+	
+
+</beans>

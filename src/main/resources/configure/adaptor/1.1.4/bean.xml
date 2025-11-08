@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+		<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" id="propertyConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:@@IN_NAME@@.properties</value>
+            </list>
+        </property>
+    </bean>
+
+     <bean id="adaptorBean" class="com.mb.indigo2.springsupport.AdaptorConfigBean">
+        <property name="port" value="@@PORT@@"></property>
+        <property name="hearBeatInterval" value="60"></property>
+        <property name="soketTimeOut" value="60"></property>
+        <property name="netChkList">
+            <list>
+            </list>
+        </property>
+    </bean> 
+ </beans>

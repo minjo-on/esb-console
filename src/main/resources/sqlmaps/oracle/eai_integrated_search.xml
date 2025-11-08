@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="integratedSearch">
+<typeAlias alias="config_file"   type="com.indigo.web.agent.vo.EaiSearchConfigFileVO"/>
+
+<resultMap  id="agent_search" class="java.util.HashMap">
+	<result property="PD_TYPE" column="PD_TYPE" />
+
+	<result property="PD_STATUS" column="PD_STATUS" />
+	<result property="PD_FIREWALL" column="PD_FIREWALL" />
+	<result property="PD_NAME" column="PD_NAME" />
+	<result property="IM_VER" column="IM_VER" />
+	<result property="IM_IP" column="IM_IP" />
+	<result property="IM_PORT" column="IM_PORT" />
+	
+	<result property="PD_REG_DATE" column="PD_REG_DATE" javaType="java.util.Date"/>
+	
+	<result property="PD_ID" column="PD_ID" />
+	<result property="PD_NAME" column="PD_NAME" />
+	<result property="PD_ALIAS" column="PD_ALIAS" />
+	<result property="IN_IM_ID" column="IN_IM_ID" />
+	<result property="IM_ID" column="IM_ID" />
+	
+</resultMap>
+
+<resultMap  id="adaptor_search" class="java.util.HashMap">
+	<result property="PD_TYPE" column="PD_TYPE" />
+
+	<result property="PD_STATUS" column="PD_STATUS" />
+	<result property="IM_ALIAS" column="IM_ALIAS" />
+	<result property="PD_ALIAS" column="PD_ALIAS" />
+	<result property="IN_DEPLOY_DATE" column="IN_DEPLOY_DATE" javaType="java.util.Date" />
+	<result property="PD_REG_DATE" column="PD_REG_DATE" />
+	<result property="PD_ID" column="PD_ID" />
+	<result property="PD_NAME" column="PD_NAME" />
+	<result property="PD_ALIAS" column="PD_ALIAS" />
+	<result property="IN_IM_ID" column="IN_IM_ID" />
+	<result property="PJ_ID" column="PJ_ID" />
+	<result property="PJ_NAME" column="PJ_NAME" />
+	<result property="IM_NAME" column="IM_NAME" />
+	<result property="IN_ID" column="IN_ID" />
+	
+</resultMap>
+	
+
+	<select id="agnet_integrated_search" resultMap="agent_search" parameterClass="HashMap">
+		SELECT Z.*
+    	FROM   (
+       		select ROWNUM ROW_NUM, PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    	    	PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    	   	    IM.IM_ID, IM.IM_IP, IM.IM_PORT, IM.IM_OS, IM.IM_INFO, IM.IM_VER, PD.FINAL_DS_STATUS, PD.PD_GROUP_ID,
+	    	   	    PD.PD_FAVORITE, PD.PD_FIREWALL, PD.PD_STATUS
+        			from   (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',null,'null','1') PD_STATUS , pd1.*
+                  			 from esb_PRODUCT pd1) PD , esb_IMANAGER IM
+        				where  PD.PD_ID = IM.IM_ID
+        					<isNotNull property="SEARCH_GROUP" prepend="and">
+								PD.PD_GROUP_ID = #SEARCH_GROUP#
+				        	</isNotNull>
+        					<isNotNull property="SEARCH_VALUE" prepend="and">
+								(    PD.PD_ALIAS like '%'||#SEARCH_VALUE#||'%'
+								  OR PD.PD_NAME like '%'||#SEARCH_VALUE#||'%'
+	                              <isNotEqual property="SEARCH_VALUE" compareValue="null"> 
+									OR PD.PD_FIREWALL = #SEARCH_VALUE#
+									OR PD.PD_STATUS = #SEARCH_VALUE# 
+								  </isNotEqual> 
+	                              <isEqual property="SEARCH_VALUE" compareValue="null"> 
+									OR PD.PD_FIREWALL IS NULL
+								  </isEqual> 
+								  OR IM.IM_VER like '%'||#SEARCH_VALUE#||'%'
+	                              OR IM.IM_IP like '%'||#SEARCH_VALUE#||'%'
+	                              OR IM.IM_PORT like '%'||#SEARCH_VALUE#||'%'
+					        	)
+				        	</isNotNull>
+				        	<isNotNull property="SEARCH_AGENT" prepend="and">
+							 ( PD.PD_ALIAS like '%'||#SEARCH_AGENT#||'%'
+							OR PD.PD_NAME like '%'||#SEARCH_AGENT#||'%' )
+					        </isNotNull>
+	                        <isNotNull property="SEARCH_IP" prepend="and">
+							IM.IM_IP like '%'||#SEARCH_IP#||'%'
+					        </isNotNull>
+	                        <isNotNull property="SEARCH_PORT" prepend="and">
+							IM.IM_PORT like '%'||#SEARCH_PORT#||'%'
+					        </isNotNull>
+				        	
+           				 order by PD.PD_ORDER, PD.PD_NAME, PD.PD_REG_DATE
+           	) Z
+    	<![CDATA[
+		where  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+
+	<select id="agnet_integrated_search_total" resultClass="int" parameterClass="HashMap">
+       			select count(*)
+        			from   (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',null,'null','1') PD_STATUS , pd1.*
+                  			 from esb_PRODUCT pd1) PD , esb_IMANAGER IM
+        				where  PD.PD_ID = IM.IM_ID
+        					<isNotNull property="SEARCH_GROUP" prepend="and">
+								PD.PD_GROUP_ID = #SEARCH_GROUP#
+				        	</isNotNull>
+        					<isNotNull property="SEARCH_VALUE" prepend="and">
+								(    PD.PD_ALIAS like '%'||#SEARCH_VALUE#||'%'
+								  OR PD.PD_NAME like '%'||#SEARCH_VALUE#||'%'
+	                              <isNotEqual property="SEARCH_VALUE" compareValue="null"> 
+									OR PD.PD_FIREWALL = #SEARCH_VALUE#
+									OR PD.PD_STATUS = #SEARCH_VALUE# 
+								  </isNotEqual> 
+	                              <isEqual property="SEARCH_VALUE" compareValue="null"> 
+									OR PD.PD_FIREWALL IS NULL
+								  </isEqual> 
+								  OR IM.IM_VER like '%'||#SEARCH_VALUE#||'%'
+	                              OR IM.IM_IP like '%'||#SEARCH_VALUE#||'%'
+	                              OR IM.IM_PORT like '%'||#SEARCH_VALUE#||'%'
+					        	)
+				        	</isNotNull>
+				        	<isNotNull property="SEARCH_AGENT" prepend="and">
+							 ( PD.PD_ALIAS like '%'||#SEARCH_AGENT#||'%'
+							OR PD.PD_NAME like '%'||#SEARCH_AGENT#||'%' )
+					        </isNotNull>
+	                        <isNotNull property="SEARCH_IP" prepend="and">
+							IM.IM_IP like '%'||#SEARCH_IP#||'%'
+					        </isNotNull>
+	                        <isNotNull property="SEARCH_PORT" prepend="and">
+							IM.IM_PORT like '%'||#SEARCH_PORT#||'%'
+					        </isNotNull>
+	</select>
+	
+	<select id="adaptor_integrated_search" resultMap="adaptor_search" parameterClass="HashMap">
+		SELECT Z.*
+    	FROM   (
+ 			SELECT ROWNUM ROW_NUM, T.* FROM( SELECT A.PD_ID, A.PD_TYPE, A.PD_NAME, A.PD_ALIAS, A.PD_REG_DATE , A.final_ds_status,
+                                           	   A.IN_IM_ID, A.FINAL_NW_STATUS, A.FINAL_MO_STATUS, A.FINAL_MO_REG_DATE, A.MO_ERROR_CNT,
+                                               B.PJ_ID, B.IN_DEPLOY_YN, B.IN_DEPLOY_DATE, B.IN_ID, C.PJ_NAME,
+                                                ( 
+                                               	SELECT B.PD_AlIAS 
+                                               	FROM esb_PRODUCT B 
+                                                WHERE B.PD_ID=A.IN_IM_ID
+                                               ) IM_ALIAS,
+                                  			   (
+                                                SELECT B.PD_NAME 
+                                                FROM esb_PRODUCT B 
+                                                WHERE B.PD_ID=A.IN_IM_ID
+                                               ) IM_NAME,
+                                               A.PD_STATUS,
+                                               C.PJ_GROUP_ID
+                                        FROM esb_INSTANCE B, esb_PROJECT C, 
+                                                        	(select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+										                              	DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+										                                    DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'NULL')))) PD_STATUS , pd1.*
+								                  			 from esb_PRODUCT pd1
+								                  			 order by PD_ORDER) A
+								        WHERE B.IN_ID=A.PD_ID AND B.PJ_ID=C.PJ_ID) T  
+							<dynamic prepend="where">								        
+	        					<isNotNull property="SEARCH_GROUP" prepend="and">
+									T.PJ_GROUP_ID = #SEARCH_GROUP#
+					        	</isNotNull>
+	        					<isNotNull property="SEARCH_VALUE" prepend="and">
+									(    T.PD_ALIAS like '%'||#SEARCH_VALUE#||'%'
+									  OR T.PD_NAME like '%'||#SEARCH_VALUE#||'%'
+	                                  <isNotEqual property="SEARCH_VALUE" compareValue="null"> 
+								      	OR T.PD_STATUS = #SEARCH_VALUE# 
+									  </isNotEqual> 
+		                              <isEqual property="SEARCH_VALUE" compareValue="null">
+		                              	OR T.PD_STATUS IS NULL 
+		                              </isEqual>
+	                                  OR T.IM_ALIAS like '%'||#SEARCH_VALUE#||'%'
+                                      OR T.IM_NAME like '%'||#SEARCH_VALUE#||'%'
+                                      OR T.PJ_NAME like '%'||#SEARCH_VALUE#||'%'
+                                    )
+					        	</isNotNull>
+									  <isNotNull property="SEARCH_ADAPTOR" prepend="and">
+										  ( T.PD_ALIAS like '%'||#SEARCH_ADAPTOR#||'%'
+										 OR T.PD_NAME like '%'||#SEARCH_ADAPTOR#||'%' )
+						        	  </isNotNull>
+                                	  <isNotNull property="SEARCH_AGENT" prepend="and">
+										  ( T.IM_ALIAS like '%'||#SEARCH_AGENT#||'%'
+                                      	 OR T.IM_NAME like '%'||#SEARCH_AGENT#||'%' )
+						        	  </isNotNull>
+                                	  <isNotNull property="SEARCH_PROJECT" prepend="and">
+										 T.PJ_NAME like '%'||#SEARCH_PROJECT#||'%'
+						        	  </isNotNull>
+				        	</dynamic>
+           	) Z
+    	<![CDATA[
+		where  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+	
+	<select id="adaptor_integrated_search_total" resultClass="int" parameterClass="HashMap">
+ 			SELECT count(*) FROM( SELECT A.PD_ID, A.PD_TYPE, A.PD_NAME, A.PD_ALIAS, A.PD_REG_DATE , A.final_ds_status,
+                                           	   A.IN_IM_ID, A.FINAL_NW_STATUS, A.FINAL_MO_STATUS, A.FINAL_MO_REG_DATE, A.MO_ERROR_CNT,
+                                               B.PJ_ID, B.IN_DEPLOY_YN, B.IN_DEPLOY_DATE, B.IN_ID, C.PJ_NAME,
+                                                ( 
+                                               	SELECT B.PD_AlIAS 
+                                               	FROM esb_PRODUCT B 
+                                                WHERE B.PD_ID=A.IN_IM_ID
+                                               ) IM_ALIAS,
+                                  			   (
+                                                SELECT B.PD_NAME 
+                                                FROM esb_PRODUCT B 
+                                                WHERE B.PD_ID=A.IN_IM_ID
+                                               ) IM_NAME,
+                                               A.PD_STATUS,
+                                               C.PJ_GROUP_ID
+                                        FROM esb_INSTANCE B, esb_PROJECT C, 
+                                                        	(select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+										                              	DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+										                                    DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'NULL')))) PD_STATUS , pd1.*
+								                  			 from esb_PRODUCT pd1
+								                  			 order by PD_ORDER) A
+								        WHERE B.IN_ID=A.PD_ID AND B.PJ_ID=C.PJ_ID) T  
+							<dynamic prepend="where">								        
+	        					<isNotNull property="SEARCH_GROUP" prepend="and">
+									T.PJ_GROUP_ID = #SEARCH_GROUP#
+					        	</isNotNull>
+	        					<isNotNull property="SEARCH_VALUE" prepend="and">
+									(    T.PD_ALIAS like '%'||#SEARCH_VALUE#||'%'
+									  OR T.PD_NAME like '%'||#SEARCH_VALUE#||'%'
+	                                  <isNotEqual property="SEARCH_VALUE" compareValue="null"> 
+								      	OR T.PD_STATUS = #SEARCH_VALUE# 
+									  </isNotEqual> 
+		                              <isEqual property="SEARCH_VALUE" compareValue="null">
+		                              	OR T.PD_STATUS IS NULL 
+		                              </isEqual>
+	                                  OR T.IM_ALIAS like '%'||#SEARCH_VALUE#||'%'
+                                      OR T.IM_NAME like '%'||#SEARCH_VALUE#||'%'
+                                      OR T.PJ_NAME like '%'||#SEARCH_VALUE#||'%'
+                                    )
+					        	</isNotNull>
+									  <isNotNull property="SEARCH_ADAPTOR" prepend="and">
+										  ( T.PD_ALIAS like '%'||#SEARCH_ADAPTOR#||'%'
+										 OR T.PD_NAME like '%'||#SEARCH_ADAPTOR#||'%' )
+						        	  </isNotNull>
+                                	  <isNotNull property="SEARCH_AGENT" prepend="and">
+										  ( T.IM_ALIAS like '%'||#SEARCH_AGENT#||'%'
+                                      	 OR T.IM_NAME like '%'||#SEARCH_AGENT#||'%' )
+						        	  </isNotNull>
+                                	  <isNotNull property="SEARCH_PROJECT" prepend="and">
+										 T.PJ_NAME like '%'||#SEARCH_PROJECT#||'%'
+						        	  </isNotNull>
+				        	</dynamic>
+	</select>
+	
+	<select id="integrated-search-adaptor-profile" resultClass="HashMap" parameterClass="HashMap">
+		SELECT Z.*
+    	FROM   (
+			SELECT ROWNUM ROW_NUM, T.*  
+				FROM(SELECT A.IN_FILE_NAME, A.IN_ID, A.IN_FILE_ID , H.HISTORY_FILE_CONTS  AS IN_FILE_CONTS, PD_STATUS, B.PD_GROUP_ID, B.IN_IM_ID, B.PD_NAME, B.PD_ALIAS, D.PJ_NAME, D.PJ_ID,
+					( SELECT F.PD_ALIAS  FROM esb_PRODUCT F  WHERE F.PD_ID = B.IN_IM_ID ) IM_ALIAS,
+					   ( SELECT F.PD_NAME  	FROM esb_PRODUCT F  WHERE F.PD_ID = B.IN_IM_ID ) IM_NAME 
+						FROM esb_INSTANCE_FILE A, (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+												          DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+												          DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'NULL')))) PD_STATUS , pd1.*
+										           		from esb_PRODUCT pd1 order by PD_ORDER) B, 
+							 esb_INSTANCE C, esb_PROJECT D, INDIGO_CMM_RESOURCE_HISTORY H
+								WHERE B.PD_ID = A.IN_ID AND A.IN_ID=C.IN_ID AND C.PJ_ID = D.PJ_ID AND A.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y' AND B.PD_TYPE='AD'
+									<isNotNull property="SEARCH_VALUE" prepend="and">
+								<!-- H.HISTORY_FILE_CONTS LIKE '%' || #SEARCH_VALUE# || '%' -->
+								DBMS_LOB.INSTR (H.HISTORY_FILE_CONTS, 
+									  <isNotEqual property="SEARCH_VALUE" compareValue="null"> 
+								     utl_raw.cast_to_raw (CONVERT(#SEARCH_VALUE#, 'AL32UTF8', 'KO16MSWIN949')) 
+									  </isNotEqual> 
+		                              <isEqual property="SEARCH_VALUE" compareValue="null">
+		                              NULL 
+		                              </isEqual>
+								, 1, 1) > 0
+							</isNotNull>
+							<isNotNull property="SEARCH_ADAPTOR" prepend="and">
+									 ( B.PD_ALIAS like '%'||#SEARCH_ADAPTOR#||'%'
+									OR B.PD_NAME like '%'||#SEARCH_ADAPTOR#||'%' )
+						    </isNotNull>
+							) T
+							<dynamic prepend="where">	
+								<isNotNull property="SEARCH_GROUP" prepend="and">
+									T.PD_GROUP_ID = #SEARCH_GROUP#
+								</isNotNull>
+							</dynamic>
+           	) Z
+    	<![CDATA[
+		where  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>	
+	
+	<select id="integrated-search-adaptor-profile_total" resultClass="int" parameterClass="HashMap">
+	SELECT count(*)
+		FROM(SELECT A.IN_FILE_NAME, A.IN_ID, A.IN_FILE_ID , H.HISTORY_FILE_CONTS AS IN_FILE_CONTS, PD_STATUS, B.PD_GROUP_ID, B.IN_IM_ID, B.PD_NAME, B.PD_ALIAS, D.PJ_NAME, D.PJ_ID
+				FROM esb_INSTANCE_FILE A, (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+										          DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+										          DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'NULL')))) PD_STATUS , pd1.*
+								           		from esb_PRODUCT pd1 order by PD_ORDER) B, 
+					 esb_INSTANCE C, esb_PROJECT D, INDIGO_CMM_RESOURCE_HISTORY H
+						WHERE B.PD_ID = A.IN_ID AND A.IN_ID=C.IN_ID AND C.PJ_ID = D.PJ_ID AND A.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y' AND B.PD_TYPE='AD'
+							<isNotNull property="SEARCH_VALUE" prepend="and">
+								<!-- H.HISTORY_FILE_CONTS LIKE '%' || #SEARCH_VALUE# || '%' -->
+								DBMS_LOB.INSTR (H.HISTORY_FILE_CONTS, 
+									  <isNotEqual property="SEARCH_VALUE" compareValue="null"> 
+								     utl_raw.cast_to_raw (CONVERT(#SEARCH_VALUE#, 'AL32UTF8', 'KO16MSWIN949')) 
+									  </isNotEqual> 
+		                              <isEqual property="SEARCH_VALUE" compareValue="null">
+		                              NULL 
+		                              </isEqual>
+								, 1, 1) > 0
+							</isNotNull>
+							<isNotNull property="SEARCH_ADAPTOR" prepend="and">
+									 ( B.PD_ALIAS like '%'||#SEARCH_ADAPTOR#||'%'
+									OR B.PD_NAME like '%'||#SEARCH_ADAPTOR#||'%' )
+						    </isNotNull>
+							) T
+							<dynamic prepend="where">	
+								<isNotNull property="SEARCH_GROUP" prepend="and">
+									T.PD_GROUP_ID = #SEARCH_GROUP#
+								</isNotNull>
+							</dynamic>
+	</select>
+</sqlMap>

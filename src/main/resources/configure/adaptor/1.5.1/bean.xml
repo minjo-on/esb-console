@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="euc-kr"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+     <bean id="adaptorBean" class="com.mb.indigo2.springsupport.AdaptorConfigBean">
+      <property name="adaptorName" value="@@IN_NAME@@"/>
+        <property name="port" value="@@PORT@@"></property>
+        <property name="heartBeatInterval" value="60"></property>
+        <property name="socketTimeOut" value="60"></property>
+        <property name="heartbeatMsgType" value="xml"></property>
+        <property name="netChkList">
+            <list>
+            </list>
+        </property>
+    </bean>
+ </beans>

@@ -1,0 +1,23 @@
+ESB_PRODUCT,제품,어댑터/IM 인스턴스 기준(기본)정보 테이블 인스턴스의 모니터링 마지막 상태값을 항상 가지고 있음 IM 은 하나의 인스턴스만 있음
+ESB_IMANAGER,IM 정보,Instance Manager에 대한 정보를 저장
+ESB_PROJECT,프로젝트 폴더 관리,프로젝트 폴더 정보를 저장하는 테이블
+ESB_INSTANCE,인스턴스 정보,어댑터 인스턴스 상세 정보 관리
+ESB_INSTANCE_FILE,인스턴스 파일 정보,인스턴스 파일 관리 테이블
+INDIGO_CMM_RESOURCE,공통리소스 일반,공통리소스 일반정보테이블
+INDIGO_CMM_RESOURCE_PROPERTY,공통리소스 상세,공통리소스 상세설정정보테이블
+INDIGO_CMM_RESOURCE_HISTORY,공통리소스 이력,설정파일 이력관리테이블
+INDIGO_CMM_RESOURCE_MAPPING,공통리소스 매핑,공통리소스 - Adaptor 매핑정보테이블
+ESB_DEPLOY_MAPPING,인스턴스-리소스 매핑,어댑터 인스턴스와 IService를 매핑 하기위한 테이블
+INDIGO_FOLDER,폴더,폴더를 관리하가위한 테이블 Iservice 를 화면에 출력할때 사용
+ESB_ISERVICE,IService,Iservice 파일 관리
+ESB_ISERVICE_VER,IService 파일,ISERVICE 클래스  파일을 관리 하는 테이블
+INDIGO_USER,사용자,로그인 유저에 대한 정보를 저장하는 테이블
+INDIGO_GROUP,그룹, 그룹관리 테이블
+INDIGO_GROUP_MAPPING,그룹 매핑, 그룹과 사용자 매핑 테이블
+ROUTE_INFO,라우트 설정,AdaptorTemplate 라우트 설정 테이블
+INDIGO_CODE,코드,코드설정 테이블
+INDIGO_PROPERTY,ESB DB 프로퍼티,ESB DB 프로퍼티 관리 테이블
+LIBBATCHUPDATE_ZIP,라이브러리업데이트 Master,에이전트 라이브러리 업데이트 Master 테이블
+LIBBATCHUPDATE_LIB,라이브러리업데이트 Detail,에이전트 라이브러리 업데이트 Detail 테이블
+LIBBATCHUPDATE_DEPLOY,라이브러리업데이트 DEPLOY,에이전트 라이브러리 업데이트 DEPLOY 테이블
+LIBBATCHUPDATE_STATUS,라이브러리업데이트 STATUS,에이전트 라이브러리 업데이트 STATUS 테이블

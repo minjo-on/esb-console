@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+############### 비긴급신고전화 사이트 요구사항관련 수정내역 ##################
+
+1. 2017-12-08
+	1) USER_IF_MAPP_INFO 사용부분 삭제
+	2) IF_ID 검색 시 ROUTE_INFO 테이블 조인하지 않도록 수정
+-->
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_interface">
+	<typeAlias alias="routeVo" type="com.indigo.web.agent.vo.RouteInfoVO" />
+	<typeAlias alias="code_clss" type="com.indigo.web.mgmt.vo.IndigoCodeVO"/>
+	<select id="getRouteInfo" parameterClass="map" resultClass="routeVo">
+		SELECT T1.*, (SELECT count(*) FROM ROUTE_INFO
+		<isNotEmpty property="IF_ID">
+			WHERE IF_ID = #IF_ID#
+		</isNotEmpty>
+		) AS TOTCNT FROM(
+		SELECT ROWNUM AS row_num, A.*
+		FROM(
+		SELECT RT.*
+		FROM ROUTE_INFO RT
+		<dynamic prepend="WHERE">
+		<!-- 서치 타입 TOTAL 추가 190409 임정욱 -->
+		<isNotEmpty property="TOTAL">
+			IF_ID LIKE '%' || #TOTAL# || '%' OR DEST_ID LIKE '%' || #TOTAL# || '%' OR IF_NAME LIKE '%' || #TOTAL# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="IF_ID">
+			IF_ID LIKE '%' || #IF_ID# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="DEST_ID" prepend="and">
+			DEST_ID LIKE '%' || #DEST_ID# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="IF_NAME" prepend="and">
+			IF_NAME LIKE '%' || #IF_NAME# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="DATA_DEST_QUEUE" prepend="and">
+			DATA_DEST_QUEUE LIKE '%' || #DATA_DEST_QUEUE# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="RESULT_DEST_QUEUE" prepend="and">
+			RESULT_DEST_QUEUE LIKE '%' || #RESULT_DEST_QUEUE# || '%'
+		</isNotEmpty>
+		</dynamic>		
+		ORDER BY RT.CHANGE_DATE DESC
+		) A
+		) T1
+		<isNotNull property="SKIP_INDEX" >
+		<![CDATA[
+			WHERE  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+		</isNotNull>
+	</select>
+
+	<select id="getInterfaceIdCount" parameterClass="map"
+		resultClass="Integer">
+		SELECT COUNT(*) FROM ROUTE_INFO
+		WHERE IF_ID = #if_id# AND DEST_ID = #dest_id#
+	</select>
+	
+	<select id="getResultDestQueueName" parameterClass="String"
+		resultClass="String">
+			SELECT RESULT_DEST_QUEUE FROM ROUTE_INFO 
+			WHERE IF_ID = #if_id#
+			AND ROWNUM = 1
+	</select>
+
+
+	<insert id="inserteRouteInfo" parameterClass="map">
+		INSERT INTO ROUTE_INFO(
+		IF_ID,
+		DEST_ID,
+		DATA_ARR_QUEUE,
+		DATA_DEST_QUEUE,
+		RESULT_ARR_QUEUE,
+		RESULT_DEST_QUEUE,
+		REMOTE_YN,
+		CHANGE_DATE,
+		DESCRIPTION,
+		USING_IP,
+		USE_YN,
+		SND_CD,
+		RCV_CD,
+		IF_NAME
+		)
+		VALUES(
+		upper(#IF_ID#),
+		upper(#DEST_ID#),
+		#DATA_ARR_QUEUE#,
+		#DATA_DEST_QUEUE#,
+		#RESULT_ARR_QUEUE#,
+		#RESULT_DEST_QUEUE#,
+		#REMOTE_YN#,
+		#CHANGE_DATE#,
+		#DESCRIPTION#,
+		#USING_IP#,
+		#USE_YN#,
+		#SND_CD#,
+		#RCV_CD#,
+		#IF_NAME#
+		)
+	</insert>
+	
+	<update id="updateRouteInfo" parameterClass="map">
+	  UPDATE ROUTE_INFO SET
+	      DATA_ARR_QUEUE =  #DATA_ARR_QUEUE#,
+	      DATA_DEST_QUEUE =  #DATA_DEST_QUEUE#,
+	      RESULT_ARR_QUEUE =  #RESULT_ARR_QUEUE#,
+	      RESULT_DEST_QUEUE =  #RESULT_DEST_QUEUE#,
+	      REMOTE_YN =  #REMOTE_YN#,
+	      CHANGE_DATE =  #CHANGE_DATE#,
+	      DESCRIPTION =  #DESCRIPTION#,
+	      USING_IP = #USING_IP#,
+	      USE_YN = #USE_YN#,
+	      SND_CD = #SND_CD#,
+	      RCV_CD = #RCV_CD#,
+	      IF_NAME = #IF_NAME#	      
+   	  WHERE IF_ID =  upper(#IF_ID#) AND DEST_ID =  upper(#BEFORE_DEST_ID#) 
+  </update>
+	
+	<update id="deleteRouteInfo" parameterClass="map">
+	  DELETE FROM ROUTE_INFO WHERE
+      	IF_ID =  upper(#IF_ID#) AND DEST_ID =  upper(#DEST_ID#) 
+  </update>
+
+	<!-- 이력/통계 인터페이스 아이디 검색 툴바 -->
+	<select id="getInterfaceListByUserId" parameterClass="map" resultClass="code_clss">
+		SELECT DISTINCT A.CODE_ID,
+						A.CODE_NAME,
+						A.USE_YN
+		FROM (
+			SELECT   CODE_ID,
+					 CODE_NAME,
+				   	 USE_YN,
+				   	 ROWNUM as row_num
+			FROM 	 INDIGO_CODE CD
+			WHERE	 USE_YN='Y'
+			AND		 CODE_DIV='01'
+		<dynamic>
+				<isNotNull property="if_query">
+			AND CD.CODE_ID LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%'
+				</isNotNull>
+		</dynamic>
+			ORDER BY CODE_ID
+		) A
+		<isNotNull property="SKIP_INDEX" >
+		<![CDATA[
+			WHERE  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+		</isNotNull>
+	</select>
+	
+	<select id="getTotalInterfaceCountByUserId" parameterClass="map" resultClass="string">
+		SELECT COUNT(A.CODE_ID) FROM (
+			SELECT	 DISTINCT CODE_ID
+			FROM	 INDIGO_CODE
+			WHERE	 USE_YN='Y'
+			AND		 CODE_DIV='01'
+			<dynamic>
+				<isNotNull property="if_query">
+					 AND CODE_ID LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%'
+				</isNotNull>
+			</dynamic>
+		) A
+	</select>
+	
+	<select id="getTemplateSndCd" resultClass="java.util.HashMap">
+		SELECT DISTINCT CODE_ID AS SYSTEM_ID, CODE_NAME AS SYSTEM_NAME FROM INDIGO_CODE WHERE CODE_DIV = '02' AND USE_YN = 'Y' ORDER BY SYSTEM_NAME ASC
+	</select>
+	
+	<select id="getTemplateRcvCd" resultClass="java.util.HashMap">
+		SELECT DISTINCT CODE_ID AS SYSTEM_ID, CODE_NAME AS SYSTEM_NAME FROM INDIGO_CODE WHERE CODE_DIV = '02' AND USE_YN = 'Y' ORDER BY SYSTEM_NAME ASC
+	</select>
+	
+	<select id="getIfNameByIfId" parameterClass="string" resultClass="string">
+		SELECT CODE_NAME FROM INDIGO_CODE WHERE CODE_ID = #ifid# AND CODE_DIV = '01' AND USE_YN = 'Y'
+	</select>
+</sqlMap>

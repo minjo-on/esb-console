@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="indigo_code">
+
+	<typeAlias alias="code_clss" type="com.indigo.web.mgmt.vo.IndigoCodeVO"/>
+	
+	<sql id="code_table">INDIGO_CODE</sql>
+	
+	<sql id="code_cols">
+	    CODE_DIV, CODE_ID, CODE_NAME, CODE_INFO, CODE_ORDER, USE_YN
+	</sql>
+	
+	<select id="getCodeListAllByPage" parameterClass="map" resultClass="code_clss">
+    	select <include refid="code_cols" />
+		from (
+		    select ROW_NUMBER() over (ORDER BY code_div, code_id) as rn, <include refid="code_cols" /> 
+		    from (   
+		        select <include refid="code_cols" />
+		        from <include refid="code_table" />
+		        <dynamic prepend="where">
+		        	<isNotNull property="code_id" prepend="and">
+		        		(code_id like '%'||#code_id#||'%' or code_name like '%'||#code_id#||'%')
+		        	</isNotNull>
+		        </dynamic>
+		        order by code_order asc
+		    ) A
+		) B
+		where B.rn between (#START_INDEX# + 1) and (#START_INDEX# + #PAGE_ROW#)		
+    </select>
+    
+    <select id="getCodeListByCodeDiv" parameterClass="map" resultClass="code_clss">
+		select <include refid="code_cols" />
+		from (
+		    select ROW_NUMBER() over (ORDER BY code_div, code_id) as rn, <include refid="code_cols" /> 
+		    from (   
+		        select <include refid="code_cols" />
+		        from <include refid="code_table" />
+		        where code_div = #code_div#
+		        <dynamic>
+		        	<isNotNull property="code_id" prepend="and">
+		        		(code_id like '%'||#code_id#||'%' or code_name like '%'||#code_id#||'%')
+		        	</isNotNull>
+		        </dynamic>
+		        order by code_order asc
+		    ) A
+		) B
+		where B.rn between (#START_INDEX# + 1) and (#START_INDEX# + #PAGE_ROW#)	
+    </select>
+	
+    <select id="getCodeList" parameterClass="map" resultClass="code_clss">
+        select <include refid="code_cols" />
+        from   <include refid="code_table" />
+        where  CODE_DIV = #CODE_DIV# 
+        <isNotEmpty property="USE_YN">
+        and    USE_YN = #USE_YN#
+        </isNotEmpty>        
+        order by CODE_ORDER
+    </select>
+    
+    <select id="getCodeListByCodeId" parameterClass="map" resultClass="code_clss">
+        select <include refid="code_cols" />
+        from   <include refid="code_table" />
+        where  CODE_ID = #CODE_ID#
+        order by CODE_ORDER ASC
+    </select>
+    
+    <select id="getCodeListAll" parameterClass="map" resultClass="code_clss">
+        select <include refid="code_cols" />
+        from   <include refid="code_table" />
+        order by CODE_ORDER ASC    
+    </select>   
+    
+    <select id="getCodeListAllCount" parameterClass="map" resultClass="Integer">
+        select count(*)
+        from  (
+                 select <include refid="code_cols" /> 
+                 from <include refid="code_table" />
+                 <dynamic prepend="where">
+		        	<isNotNull property="code_id" prepend="and">
+		        		(code_id like '%'||#code_id#||'%' or code_name like '%'||#code_id#||'%')
+		        	</isNotNull>
+		        </dynamic>
+               )                
+    </select>
+    
+    <select id="getCodeListAllCountByCodeDiv" parameterClass="map" resultClass="Integer">
+        select count(*)
+        from  (
+                 select <include refid="code_cols" /> 
+                 from <include refid="code_table" />
+                 where CODE_DIV = #code_div#
+                 <dynamic>
+		        	<isNotNull property="code_id" prepend="and">
+		        		(code_id like '%'||#code_id#||'%' or code_name like '%'||#code_id#||'%')
+		        	</isNotNull>
+		        </dynamic>
+               )  
+    </select>
+        
+    <select id="getCodeInfo" parameterClass="map" resultClass="code_clss">
+        select <include refid="code_cols" />
+        from   <include refid="code_table" />
+        where  CODE_DIV = #CODE_DIV#
+        and    CODE_ID  = #CODE_ID#
+    </select>
+    
+    <select id="getCodeInfoByCodeId" parameterClass="map" resultClass="code_clss">
+        select <include refid="code_cols" />
+        from   <include refid="code_table" />
+        where  CODE_ID  = #CODE_ID#
+    </select>
+    
+    <insert id="insertCode" parameterClass="code_clss">
+    	insert into <include refid="code_table" />
+    	(<include refid="code_cols" />)
+    	values
+    	(#code_div#, #code_id#, #code_name:VARCHAR:NO_ENTRY#, #code_info:VARCHAR:NO_ENTRY#, #code_order#, #use_yn#)
+    </insert>
+    
+    <update id="updateCode" parameterClass="code_clss">
+		update <include refid="code_table" />
+		set    CODE_NAME  = #code_name# , 
+		       CODE_INFO  = #code_info#, 
+		       CODE_ORDER = #code_order#, 
+		       USE_YN     = #use_yn# 
+        where  CODE_DIV = #code_div#
+        and    CODE_ID  = #code_id#
+    </update>
+    
+    <delete id="deleteCode" parameterClass="map">
+        delete from <include refid="code_table" />
+        where  CODE_ID  = #CODE_ID#
+    </delete>
+    
+	
+</sqlMap>

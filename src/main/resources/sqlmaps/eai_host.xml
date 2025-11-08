@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_host">
+
+	<typeAlias alias="host" type="com.indigo.web.agent.vo.EaiHostVO"/>
+	
+	<sql id="host_table">esb_HOST</sql>
+	
+	<sql id="host_cols">
+	    HOST_NAME, HOST_IP, HOST_ORDER
+	</sql>
+
+    <select id="getHostList" parameterClass="string" resultClass="host">
+        select <include refid="host_cols" />
+        from   <include refid="host_table" />
+        <isParameterPresent>
+        where  HOST_NAME = #value#
+        </isParameterPresent>
+        <isNotParameterPresent>
+        order by HOST_ORDER
+        </isNotParameterPresent>
+    </select>
+    
+    <insert id="insertHost" parameterClass="host">
+    	insert into <include refid="host_table" />
+    	(<include refid="host_cols" />)
+    	values
+    	(#host_name#, #host_ip#, #host_order#)
+    </insert>
+    
+    <update id="updateHost" parameterClass="host">
+		update <include refid="host_table" />
+		set    HOST_IP    = #host_ip# , 
+		       HOST_ORDER = #host_order# 
+		where  HOST_NAME = #host_name#     
+    </update>
+    
+    <delete id="deleteHost" parameterClass="string">
+        delete from <include refid="host_table" />
+        where  HOST_NAME = #value#
+    </delete>
+	
+</sqlMap>

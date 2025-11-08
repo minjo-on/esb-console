@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="notice">
+
+	<insert id="insertNoticeConts" parameterClass="map">
+        <![CDATA[
+        INSERT INTO ESB_NOTICE(ID, CONTS, REG_DATE)
+	  	VALUES (
+	  		CASE
+		  		WHEN (SELECT MAX(E.ID) FROM ESB_NOTICE E) IS NULL THEN 1
+		  		ELSE (SELECT MAX(E.ID) FROM ESB_NOTICE E) + 1
+	  	END, ]]>
+	  	#CONTS#,
+	  	<![CDATA[ 
+  		CAST(YEAR(CURRENT DATE) AS CHAR(4)) ||
+  		CASE
+  			WHEN MONTH(CURRENT DATE) < 10 THEN '0' || CAST(MONTH(CURRENT DATE) AS CHAR(1))
+  			ELSE CAST(MONTH(CURRENT DATE) AS CHAR(2))
+  		END ||
+  		CASE
+  			WHEN DAY(CURRENT DATE) < 10 THEN '0' || CAST(DAY(CURRENT DATE) AS CHAR(1))
+  			ELSE CAST(DAY(CURRENT DATE) AS CHAR(2))
+		END ||
+  		CASE
+  			WHEN HOUR(CURRENT TIME) < 10 THEN '0' || CAST(HOUR(CURRENT TIME) AS CHAR(1))
+  			ELSE CAST(HOUR(CURRENT TIME) AS CHAR(2))
+  		END ||
+  		CASE
+  			WHEN MINUTE(CURRENT TIME) < 10 THEN '0' || CAST(MINUTE(CURRENT TIME) AS CHAR(1))
+  			ELSE CAST(MINUTE(CURRENT TIME) AS CHAR(2))
+  		END ||
+  		CASE
+	  		WHEN SECOND(CURRENT TIME) < 10 THEN '0' || CAST(SECOND(CURRENT TIME) AS CHAR(1))
+  			ELSE CAST(SECOND(CURRENT TIME) AS CHAR(2))
+  		END || '000' 
+	  	)
+	  	]]>
+    </insert>
+
+	<update id="updateNoticeConts" parameterClass="map">
+      <![CDATA[
+        UPDATE ESB_NOTICE 
+        SET CONTS=#CONTS#, REG_DATE=
+		CAST(YEAR(CURRENT DATE) AS CHAR(4)) ||
+	  		CASE
+	  		WHEN MONTH(CURRENT DATE) < 10 THEN '0' || CAST(MONTH(CURRENT DATE) AS CHAR(1))
+	  		ELSE CAST(MONTH(CURRENT DATE) AS CHAR(2))
+	  		END ||
+	  		CASE
+	  		WHEN DAY(CURRENT DATE) < 10 THEN '0' || CAST(DAY(CURRENT DATE) AS CHAR(1))
+	  		ELSE CAST(DAY(CURRENT DATE) AS CHAR(2))
+	  		END ||
+	  		CASE
+	  		WHEN HOUR(CURRENT TIME) < 10 THEN '0' || CAST(HOUR(CURRENT TIME) AS CHAR(1))
+	  		ELSE CAST(HOUR(CURRENT TIME) AS CHAR(2))
+	  		END ||
+	  		CASE
+	  		WHEN MINUTE(CURRENT TIME) < 10 THEN '0' || CAST(MINUTE(CURRENT TIME) AS CHAR(1))
+	  		ELSE CAST(MINUTE(CURRENT TIME) AS CHAR(2))
+	  		END ||
+	  		CASE
+	  		WHEN SECOND(CURRENT TIME) < 10 THEN '0' || CAST(SECOND(CURRENT TIME) AS CHAR(1))
+	  		ELSE CAST(SECOND(CURRENT TIME) AS CHAR(2))
+	  		END || '000'
+	  	]]>
+        WHERE ID = #ID#
+    </update>
+
+	<select id="selectNoticeConts" parameterClass="map" resultClass="java.util.HashMap">
+        SELECT ID, CONTS, REG_DATE
+		FROM ( SELECT
+		ROW_NUMBER() OVER() AS R,
+		ESB_NOTICE.* FROM ESB_NOTICE
+		) AS TR WHERE r<![CDATA[<]]>=#limit#
+		ORDER BY ID DESC
+    </select>
+
+	<delete id="deleteNoticeConts" parameterClass="map">
+        DELETE FROM ESB_NOTICE
+	  	WHERE ID = #ID#
+    </delete>
+	
+</sqlMap>

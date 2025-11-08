@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="main_search">
+
+	<select id="getProductTotalCountListByPdNameAndPdId" resultClass="integer" parameterClass="java.util.Map">
+		SELECT count(*)
+	        FROM   ESB_PRODUCT PD
+	        WHERE PD_NAME LIKE '%'||#SEARCH_VALUE#||'%' 
+	        OR   PD_ALIAS LIKE'%'||#SEARCH_VALUE#||'%'
+	</select>
+	<select id="getProductListByPdNameAndPdId" resultClass="java.util.HashMap" parameterClass="java.util.Map">
+    	<![CDATA[                                   		
+    	SELECT T.*
+	    FROM    (SELECT ROWNUM row_num,
+	        		PD_ID, 
+	        		PD_TYPE, 
+	        		PD_ORDER, 
+	        		PD_NAME, 
+	        		PD_ALIAS,
+	        		to_char(PD_REG_DATE, 'yyyy-mm-dd hh24:mi:ss') as PD_REG_DATE, 
+	        		PD_REG_USER,
+				    IN_IM_ID, 
+				    FINAL_NW_STATUS, 
+				    FINAL_MO_STATUS, 
+				    FINAL_DS_STATUS, 
+				    to_char(FINAL_MO_REG_DATE, 'yyyy-mm-dd hh24:mi:ss') as FINAL_MO_REG_DATE, 
+				    MO_ERROR_CNT,
+				    PD_GROUP_ID,
+				    PD_FAVORITE, 
+				    PD_FIREWALL,
+	        		DECODE(SIGN(((sysdate - PD.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',
+			                            		DECODE(PD.FINAL_MO_STATUS,'-2','-2','-1','-1',
+			                                    		DECODE( PD.FINAL_NW_STATUS,'99','2',nvl(PD.FINAL_MO_STATUS,'NULL')))) PD_STATUS
+	        FROM   ESB_PRODUCT PD
+	        WHERE PD_NAME LIKE '%'||#SEARCH_VALUE#||'%' 
+	        OR   PD_ALIAS LIKE'%'||#SEARCH_VALUE#||'%') T
+	    WHERE  row_num > #SKIP_INDEX#
+		  AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+</sqlMap>

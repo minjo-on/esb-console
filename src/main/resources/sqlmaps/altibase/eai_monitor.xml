@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_monitor">
+
+	<typeAlias alias="monitor" type="com.indigo.web.agent.vo.EaiMonitorVO"/>
+	<typeAlias alias="monitorResource" type="com.indigo.web.agent.vo.EaiMonitorResourceVO"/>
+
+	<sql id="product_table">esb_PRODUCT</sql>
+	<sql id="monitor_table">esb_MONITOR</sql>
+	<sql id="monitor_resource_table">esb_MONITOR_RESOURCE</sql>
+
+	<sql id="monitor_cols">
+	    MO_ID, IM_STATUS, NW_STATUS, DS_STATUS, CPU_USE, MEMORY_USE,
+	    CPU_TIME, ELAPSED_TIME, MO_REG_DATE, MO_STATUS, PD_ID
+	</sql>
+
+	<select id="pingQuery">
+		SELECT * FROM DUAL
+	</select>
+	<sql id="monitor_resource_cols">
+	    MO_ID, MO_TYPE, PD_ID, CPU_USE, DISK_USE, JVM_USE, MO_REG_DATE, JVM_USED, DISK_USED
+	</sql>
+
+	<sql id="join_cols">
+	    MO.MO_ID, MO.IM_STATUS, MO.NW_STATUS, MO.DS_STATUS, MO.CPU_USE, MO.MEMORY_USE,
+	    MO.CPU_TIME, MO.ELAPSED_TIME, MO.MO_REG_DATE, MO.MO_STATUS, MO.PD_ID,
+	    PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    PD.IN_IM_ID, PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT
+	</sql>
+
+    <select id="getMonitorListByColumn" resultClass="monitor" parameterClass="map">
+        select <include refid="join_cols" />
+        from   <include refid="product_table" /> PD, <include refid="monitor_table" /> MO
+        where  PD.PD_ID = MO.PD_ID
+        <isNotNull property="PD_ID" prepend="and">
+            PD_ID = #PD_ID#
+        </isNotNull>
+        <isNotNull property="PD_NAME" prepend="and">
+            PD_NAME = #PD_NAME#
+        </isNotNull>
+        <isNotEmpty property="SRCH_TEXT">
+        and    PD_NAME like '%$SRCH_TEXT$%' and PD_ALIAS like '%$SRCH_TEXT$%'
+        </isNotEmpty>
+        order by MO_REG_DATE DESC
+    </select>
+
+    <!-- <select id="getProductListByColumn" resultClass="product" parameterClass="map">
+        select
+		    PD_ID, PD_TYPE, PD_ORDER, PD_NAME, PD_ALIAS, PD_REG_DATE, PD_REG_USER,
+		    IN_IM_ID, FINAL_NW_STATUS, FINAL_MO_STATUS, FINAL_DS_STATUS, FINAL_MO_REG_DATE, MO_ERROR_CNT,PD_GROUP_ID,
+		    PD_FAVORITE, PD_FIREWALL,
+      		(select count(*) from   esb_MONITOR EM where  EM.PD_ID = EP.PD_ID) mo_cnt
+		from   esb_PRODUCT EP
+		where
+		      $COL$ = #COL_VALUE#
+	</select> -->
+
+    <select id="getMonitorCount" resultClass="Integer" parameterClass="string">
+        select count(*)
+        from   <include refid="monitor_table" />
+        where  PD_ID = #value#
+    </select>
+
+    <select id="getMonitorMinId" resultClass="String" parameterClass="string">
+        select min(MO_ID)
+        from   <include refid="monitor_table" />
+        where  PD_ID = #value#
+    </select>
+
+    <select id="getMonitorResource" resultClass="monitorResource" parameterClass="HashMap">
+        select * from <include refid="monitor_resource_table" />
+		where MO_REG_DATE = (
+			select max(MO_REG_DATE)
+			from <include refid="monitor_resource_table" />
+			where MO_TYPE=#mo_type#
+			and PD_ID=#pd_id#
+		)and MO_TYPE=#mo_type#
+		and PD_ID=#pd_id#
+    </select>
+
+    <select id="getMonitorResourceList" resultClass="monitorResource" parameterClass="HashMap">
+    	 select * from
+		 (
+		     select * from <include refid="monitor_resource_table" />
+		     where MO_TYPE=#mo_type#
+					and PD_ID=#pd_id#
+		     order by MO_REG_DATE desc
+		   )
+		  <![CDATA[ where rownum <= 6  ]]>
+		  order by   MO_REG_DATE
+    </select>
+
+    <!-- rownum add query (To quicken full scan. 2010-01-14) -->
+    <!--select id="getMonitorMinId" resultClass="String" parameterClass="string">
+        select min(MO_ID)
+        from   <include refid="monitor_table" />
+        where  PD_ID = #value# and rownum = 1
+    </select-->
+
+    <insert id="insertMonitor" parameterClass="monitor">
+        insert into <include refid="monitor_table" />
+            (<include refid="monitor_cols" />)
+        values
+            (#mo_id#, #im_status#, #nw_status#, #ds_status#, #cpu_use#, #memory_use#,
+	         #cpu_time#, #elapsed_time#, #mo_reg_date#, #mo_status#, #pd_id#)
+    </insert>
+
+    <update id="updateMonitor" parameterClass="monitor">
+        update esb_MONITOR
+		set MO_ID = #mo_id#,
+			IM_STATUS = #im_status#,
+			NW_STATUS = #nw_status#,
+			DS_STATUS = #ds_status#,
+			CPU_USE = #cpu_use#,
+			MEMORY_USE = #memory_use#,
+			CPU_TIME = #cpu_time#,
+			ELAPSED_TIME = #elapsed_time#,
+			MO_REG_DATE = #mo_reg_date#,
+			MO_STATUS = #mo_status#,
+			PD_ID = #pd_id#
+		where
+			mo_id = (select min(mo_id) from esb_MONITOR where PD_ID = #pd_id#)
+    </update>
+
+    <delete id="deleteMonitor" parameterClass="string">
+        delete from <include refid="monitor_table" />
+        where  MO_ID = #value#
+    </delete>
+
+    <!-- delete records by ProductID patch -->
+    <delete id="deleteMonitorByPD_ID" parameterClass="string">
+        delete from <include refid="monitor_table" />
+        where  PD_ID = #value#
+    </delete>
+    <!-- delete records by ProductID patch -->
+
+    <insert id="insertMonitorResource" parameterClass="monitorResource">
+        insert into <include refid="monitor_resource_table" />
+            (<include refid="monitor_resource_cols" />)
+        values
+            (#mo_id#, #mo_type#, #pd_id#, #cpu_use#, #disk_use#, #jvm_use#, to_char(sysdate,'yyyymmddhh24miss'), #jvm_used#, #disk_used#)
+    </insert>
+    
+    <select id="getMonitorImStatusCount" resultClass="Integer" parameterClass="map">
+		SELECT COUNT(*) COUNT
+		FROM
+			(SELECT PD_ID, PD_NAME, PD_ALIAS,
+				CASE WHEN SIGN(((SYSDATE - FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)) != '-1' THEN 'ERROR'
+				WHEN SIGN(((SYSDATE - FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)) IS NULL THEN 'ERROR'
+				ELSE 'SUCCESS'
+			END AS PD_STATUS
+			FROM ESB_PRODUCT A
+			<dynamic>
+					 <isNotNull property="USER_ID">
+					 	, INDIGO_GROUP_MAPPING UMG
+					 </isNotNull>
+			</dynamic>
+			WHERE A.PD_TYPE=#PD_TYPE#
+			<dynamic>
+      				<isNotNull property="USER_ID" prepend="and">
+          				A.PD_GROUP_ID = UMG.GROUP_ID
+		        		AND UMG.USER_ID = #USER_ID#
+		        	</isNotNull>
+		        	<isNotNull property="GROUP_ID" prepend="and">
+					<iterate prepend="A.PD_GROUP_ID IN" property="GROUP_ID" open="(" conjunction="," close=")">
+							 #GROUP_ID[]#
+					</iterate>
+				</isNotNull>
+				<!-- <isNotEmpty property="GROUP_ID">
+					PD_GROUP_ID = #GROUP_ID#
+				</isNotEmpty> -->
+			</dynamic>)
+			GROUP BY PD_STATUS
+			HAVING PD_STATUS = #STATUS#
+    </select>
+    
+    <select id="getMonitorImStatusList" resultClass="monitor" parameterClass="map">
+    	SELECT B.PD_NAME PD_ID, B.PD_ALIAS PD_NAME
+		FROM
+			(SELECT PD_ID, PD_NAME, PD_ALIAS,
+				CASE WHEN SIGN(((SYSDATE - FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)) != '-1' THEN 'ERROR'
+				WHEN SIGN(((SYSDATE - FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)) IS NULL THEN 'ERROR'
+				ELSE 'SUCCESS'
+			END AS PD_STATUS
+			FROM ESB_PRODUCT A
+			WHERE A.PD_TYPE=#PD_TYPE#
+      		<dynamic prepend="and">
+				<isNotEmpty property="GROUP_ID">
+					PD_GROUP_ID = #GROUP_ID#
+				</isNotEmpty>
+			</dynamic>) B
+			WHERE PD_STATUS = #STATUS#
+    </select>
+    
+    <select id="getMonitorAdStatusCount" resultClass="Integer" parameterClass="map">
+		SELECT COUNT(*) COUNT
+		FROM
+		(SELECT PD_ID, PD_NAME, PD_ALIAS, 
+			CASE 
+				WHEN STATUS IN ('1','0') THEN 'SUCCESS'
+				WHEN STATUS = '-2' THEN 'STOP'
+				WHEN STATUS = 'NULL' THEN 'ERROR'
+				ELSE 'ERROR' 
+			END AS AD_STATUS
+			FROM (
+			SELECT PD_ID, PD_NAME, PD_ALIAS,
+				DECODE(SIGN(((sysdate - FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',
+				DECODE(FINAL_MO_STATUS,'-2','-2','-1','-1',
+				DECODE(FINAL_NW_STATUS,'99','2',nvl(FINAL_MO_STATUS,'NULL')))) AS STATUS
+			FROM ESB_PRODUCT A
+			<dynamic>
+					 <isNotNull property="USER_ID">
+					 	, INDIGO_GROUP_MAPPING UMG
+					 </isNotNull>
+			</dynamic>
+			WHERE A.PD_TYPE=#PD_TYPE#
+			<dynamic>
+      				<isNotNull property="USER_ID" prepend="and">
+          				A.PD_GROUP_ID = UMG.GROUP_ID
+		        		AND UMG.USER_ID = #USER_ID#
+		        	</isNotNull>
+		        	<isNotNull property="GROUP_ID" prepend="and">
+					<iterate prepend="A.PD_GROUP_ID IN" property="GROUP_ID" open="(" conjunction="," close=")">
+							 #GROUP_ID[]#
+					</iterate>
+				</isNotNull>
+			</dynamic>
+			<!-- WHERE PD_TYPE=#PD_TYPE#
+			<dynamic prepend="and">
+				<isNotEmpty property="GROUP_ID">
+					PD_GROUP_ID = #GROUP_ID#
+				</isNotEmpty>
+			</dynamic> -->)) GROUP BY AD_STATUS
+			HAVING AD_STATUS=#STATUS#
+    </select>
+    
+    <select id="getMonitorAdStatusList" resultClass="monitor" parameterClass="map">
+    	SELECT B.PD_NAME PD_ID, B.PD_ALIAS PD_NAME
+		FROM
+		(SELECT PD_ID, PD_NAME, PD_ALIAS, 
+			CASE 
+				WHEN STATUS IN ('1','0') THEN 'SUCCESS'
+				WHEN STATUS = 'NULL' THEN 'ERROR'
+				ELSE 'ERROR' 
+			END AS AD_STATUS
+			FROM (
+			SELECT PD_ID, PD_NAME, PD_ALIAS,
+				DECODE(SIGN(((sysdate - FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',
+				DECODE(FINAL_MO_STATUS,'-2','-2','-1','-1',
+				DECODE(FINAL_NW_STATUS,'99','2',nvl(FINAL_MO_STATUS,'NULL')))) AS STATUS
+			FROM ESB_PRODUCT
+			WHERE PD_TYPE=#PD_TYPE#
+			<dynamic prepend="and">
+				<isNotEmpty property="GROUP_ID">
+					PD_GROUP_ID = #GROUP_ID#
+				</isNotEmpty>
+			</dynamic>)) B
+			WHERE AD_STATUS=#STATUS#
+    </select>
+
+</sqlMap>

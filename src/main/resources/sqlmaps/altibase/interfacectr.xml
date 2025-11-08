@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="interfacectr">
+
+	<typeAlias alias="if_user_info" type="com.indigo.web.esb.vo.InterfaceCtrVO" />
+	<sql id="if_user_cols">
+		CTR_ID, CTR_NAME, CTR_COMPANY, CTR_POSITION, CTR_PHONENUM, CTR_SERVICEKEY, CTR_REG_DATE
+	</sql>
+
+
+	<select id="getUserList" resultClass="if_user_info" parameterClass="java.util.Map">
+		SELECT T2.* FROM(
+			SELECT ROWNUM ROW_NUM, T1.* FROM(
+				SELECT
+				<include refid="if_user_cols" />
+				FROM
+					ESB_INTERFACECTR
+					<dynamic prepend="where">
+			        	<isNotNull property="CTR_ID" prepend="and">
+			        		CTR_ID = #ctr_id#
+			        	</isNotNull>
+			        	<isNotNull property="CTR_NAME" prepend="and">
+			        		CTR_NAME like '%' ||#ctr_name#|| '%'
+			        	</isNotNull>
+			        </dynamic>
+					)T1
+			)T2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+
+	<select id="getUserListCnt" resultClass="int" parameterClass="java.util.Map">
+		select count(*)
+		FROM
+			ESB_INTERFACECTR
+			<dynamic prepend="where">
+				<isNotNull property="CTR_ID" prepend="and">
+					CTR_ID = #ctr_id#
+				</isNotNull>
+				<isNotNull property="CTR_NAME" prepend="and">
+					CTR_NAME like '%' ||#ctr_name#|| '%'
+				</isNotNull>
+			</dynamic>
+	</select>
+</sqlMap>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="indigo_ins">
+	<typeAlias alias="insVO" type="com.indigo.web.esb.vo.IndigoInstituteVO"/>
+	<typeAlias alias="resourceVO" type="com.indigo.web.esb.vo.ESBResourceVO" />
+	<sql id="ins_table">INSTITUTE_INFO</sql>
+	<sql id="mapping_table">MAPPING</sql>
+	<sql id="message_table">MESSAGE_INFO</sql>
+<!-- 	<sql id="ins_mapping">INDIGO_GROUP_MAPPING</sql> -->
+
+<!-- 	<select id="getInstituteInfoListByUserId" parameterClass="Map" resultClass="insVO"> -->
+<!-- 		select GT.ins_code, GT.ins_name, GT.ins_info  -->
+<!-- 		from -->
+<!-- 		 <include refid="ins_table" /> GT , -->
+<!-- 		 <include refid="
+" /> UMG -->
+<!-- 		where GT.ins_code = UMG.ins_code -->
+<!-- 		<isNotNull property="USER_ID" prepend="and"> -->
+<!-- 		UMG.user_id = #USER_ID# -->
+<!-- 		</isNotNull> -->
+<!-- 	</select> -->
+	
+	<select id="getInstituteInfoByInsCode" parameterClass="java.util.Map" resultClass="insVO">
+		select * from <include refid="ins_table" />
+		<dynamic prepend="where">
+			<isNotEmpty prepend="and" property="ins_code">
+				ins_code = #ins_code#
+			</isNotEmpty>
+		</dynamic>
+	</select>
+	
+	<select id="getInstituteList" resultClass="insVO">
+		select * from <include refid="ins_table" />
+		order by ins_name asc
+	</select>
+	
+	<select id="getInstituteList2" resultClass="insVO">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="ins_table" />
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+	
+	<insert id="insertInstitute" parameterClass="insVO">
+		insert into <include refid="ins_table" /> 
+		(ins_code, ins_name, ins_manager, ins_contact, ins_email, ins_memo)
+		values (#ins_code#, #ins_name#, #ins_manager#, #ins_contact#, #ins_email#, #ins_memo#)
+	</insert>
+	
+<!-- 	<insert id="insertInstituteMapping" parameterClass="java.util.Map"> -->
+<!-- 		insert into  <include refid="ins_mapping" /> -->
+<!-- 		(user_id, ins_code) -->
+<!-- 		values (#user_id#, #ins_code#) -->
+<!-- 	</insert> -->
+	
+	<update id="updateInstitute" parameterClass="insVO">
+		update <include refid="ins_table" />
+		set ins_name = #ins_name#
+		, ins_manager = #ins_manager#
+		, ins_contact = #ins_contact#
+		, ins_email = #ins_email#
+		, ins_memo = #ins_memo#
+		where ins_code = #ins_code# 
+	</update>
+	
+	<delete id="deleteInstitute" parameterClass="String">
+		delete from <include refid="ins_table" /> 
+		where ins_code = #value#
+	</delete>
+	
+<!--     <delete id="deleteInstituteMapping" parameterClass="String"> -->
+<!-- 		delete from <include refid="ins_mapping" />  -->
+<!-- 		where user_id = #value# -->
+<!-- 	</delete> -->
+
+	<select id="getInstituteCnt" resultClass="int">   
+        select count(*)
+        from   <include refid="ins_table" />
+    </select>
+    
+    <select id="getInstituteCodeCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="ins_table" />
+        where INS_CODE like '%' ||#ins_code#|| '%'
+    </select>
+    
+    <select id="getInstituteNameCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="ins_table" />
+        where INS_NAME like '%' ||#ins_name#|| '%'
+    </select>
+    
+       <select id="getInstituteContactCnt" resultClass="int" parameterClass="String">   
+        select count(*)
+        from   <include refid="ins_table" />
+        where INS_CONTACT like '%' ||#ins_contact#|| '%'
+    </select>
+    
+    <select id="getInstituteListByName" resultClass="insVO" parameterClass="java.util.Map">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+		        select *
+		        from   <include refid="ins_table" />
+		        where INS_NAME like '%' ||#ins_name#|| '%'
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+     <select id="getInstituteListByCode" resultClass="insVO" parameterClass="java.util.Map">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="ins_table" />
+		where INS_CODE like '%' ||#ins_code#|| '%'
+        	)t1 
+		)t2
+		<![CDATA[
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getInstituteListByContact" resultClass="insVO" parameterClass="java.util.Map">
+       select t2.* from(
+		    select ROWNUM row_num, t1.* from(  
+        select *
+        from   <include refid="ins_table" />
+		<![CDATA[
+		where INS_CONTACT like '%' ||#ins_contact#|| '%'
+        	)t1 
+		)t2
+		WHERE  row_num > #SKIP_INDEX#
+		AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]> 
+    </select>
+    
+    <select id="getInstituteInfoByIfId" resultClass="resourceVO" parameterClass="java.util.Map">
+        select distinct * from <include refid="ins_table" />
+        INNER JOIN <include refid="mapping_table" />
+		on <include refid="ins_table" />.ins_code = <include refid="mapping_table" />.ins_code
+        INNER JOIN <include refid="message_table" />
+		on <include refid="message_table" />.message_id=<include refid="mapping_table" />.message_id
+		where <include refid="mapping_table" />.IF_ID = #if_id# and <include refid="mapping_table" />.tr_type=#tr_type#
+    </select>
+    
+</sqlMap>

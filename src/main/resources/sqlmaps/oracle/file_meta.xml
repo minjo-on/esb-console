@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="file_meta">
+
+    <!-- VO 클래스 매핑 -->
+    <typeAlias alias="fileMeta" type="com.indigo.web.filetransfer.vo.FileMetaVO"/>
+
+    <!-- 테이블 명 -->
+    <sql id="file_meta_table">FILE_META</sql>
+
+    <!-- 컬럼 목록 -->
+    <sql id="file_meta_cols">
+        INTERFACE_ID, TABLE_NAME, DELIMITER, COLUMNS, ENCODING, HAS_HEADER, FILE_EXTENSION, CREATED_AT, UPDATED_AT
+    </sql>
+
+    <!-- 결과 매핑 -->
+    <resultMap id="fileMetaResult" class="fileMeta">
+        <result property="interfaceId" column="INTERFACE_ID"/>
+        <result property="tableName" column="TABLE_NAME"/>
+        <result property="delimiter" column="DELIMITER"/>
+        <result property="columns" column="COLUMNS" jdbcType="CLOB" typeHandler="myclob"/>
+        <result property="encoding" column="ENCODING"/>
+        <result property="hasHeader" column="HAS_HEADER"/>
+        <result property="fileExtension" column="FILE_EXTENSION"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+    </resultMap>
+
+    <!-- 조회 -->
+    <select id="selectFileMetaList" parameterClass="java.lang.String" resultMap="fileMetaResult">
+        SELECT <include refid="file_meta_cols" />
+        FROM   <include refid="file_meta_table" />
+        <dynamic prepend="WHERE">
+            <isNotEmpty property="value" prepend="AND">
+                (
+                    INTERFACE_ID LIKE '%' || #value# || '%' OR
+                    TABLE_NAME LIKE '%' || #value# || '%' OR
+                    DELIMITER LIKE '%' || #value# || '%' OR
+                    COLUMNS LIKE '%' || #value# || '%' OR
+                    ENCODING LIKE '%' || #value# || '%' OR
+                    FILE_EXTENSION LIKE '%' || #value# || '%' OR
+                    TO_CHAR(CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') LIKE '%' || #value# || '%' OR
+                    TO_CHAR(UPDATED_AT, 'YYYY-MM-DD HH24:MI:SS') LIKE '%' || #value# || '%'
+                )
+            </isNotEmpty>
+        </dynamic>
+    </select>
+
+    <!-- 등록 -->
+    <insert id="insertFileMeta" parameterClass="fileMeta">
+        INSERT INTO <include refid="file_meta_table" />
+            (INTERFACE_ID, TABLE_NAME, DELIMITER, COLUMNS, ENCODING, HAS_HEADER, FILE_EXTENSION, CREATED_AT)
+        VALUES
+            (#interfaceId#, #tableName#, #delimiter#, #columns#, #encoding#, #hasHeader#, #fileExtension#, SYSDATE)
+    </insert>
+
+    <!-- 수정 -->
+    <update id="updateFileMeta" parameterClass="fileMeta">
+        UPDATE <include refid="file_meta_table" />
+        SET    TABLE_NAME = #tableName#,
+               DELIMITER = #delimiter#,
+               COLUMNS = #columns#,
+               ENCODING = #encoding#,
+               HAS_HEADER = #hasHeader#,
+               FILE_EXTENSION = #fileExtension#,
+               UPDATED_AT = SYSDATE
+        WHERE  INTERFACE_ID = #interfaceId#
+    </update>
+
+    <!-- 삭제 -->
+    <delete id="deleteFileMeta" parameterClass="fileMeta">
+        DELETE FROM <include refid="file_meta_table" />
+        WHERE  INTERFACE_ID = #interfaceId#
+        AND    TABLE_NAME = #tableName#
+    </delete>
+    <select id="selectInterfaceList" resultClass="java.util.HashMap">
+        SELECT * FROM ATB_INTERFACE ORDER BY INTERFACE_ID
+    </select>
+
+    <select id="selectInterfaceCount" resultClass="int">
+        SELECT COUNT(*) FROM ATB_INTERFACE
+    </select>
+</sqlMap>

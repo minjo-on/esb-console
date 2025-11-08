@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<!-- backup 기능을 위한  INDIGO_CMM_RESOURCE_HISTORY 테이블 쿼리 추가 -->
+
+<sqlMap namespace="eai_instance">
+
+	<typeAlias alias="instance"        type="com.indigo.web.agent.vo.EaiInstanceVO"/>
+	<typeAlias alias="instance_file"   type="com.indigo.web.agent.vo.EaiInstanceFileVO"/>
+	<typeAlias alias="history_file"   type="com.indigo.web.agent.vo.EaiInstanceFileVO"/>
+
+	<resultMap id="instance_file_map" class="instance_file">
+	    <result property="in_id"         column="IN_ID"         jdbcType="VARCHAR" />
+	    <result property="in_file_id"    column="IN_FILE_ID"    jdbcType="VARCHAR" />
+	    <result property="in_file_name"  column="IN_FILE_NAME"  jdbcType="VARCHAR" />
+	    <result property="in_file_conts" column="IN_FILE_CONTS" jdbcType="BLOB" />
+	    <result property="history_file_size" column="HISTORY_FILE_SIZE" jdbcType="VARCHAR" />
+	    <result property="history_date"  column="HISTORY_DATE" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<resultMap id="history_file_map" class="history_file">
+		<result property="in_id"         column="IN_ID"         jdbcType="VARCHAR" />
+	    <result property="in_file_id"    column="IN_FILE_ID"    jdbcType="VARCHAR" />
+	    <result property="in_file_name"  column="IN_FILE_NAME"  jdbcType="VARCHAR" />
+	    <result property="in_file_conts" column="HISTORY_FILE_CONTS" jdbcType="BLOB" />
+	    <result property="history_version"      column="HISTORY_VERSION"         jdbcType="VARCHAR" />
+	    <result property="history_file_size" 	column="HISTORY_FILE_SIZE" jdbcType="VARCHAR" />
+	    <result property="history_memo" 	column="HISTORY_MEMO" jdbcType="VARCHAR" />
+	    <result property="history_id" 			column="HISTORY_ID" jdbcType="VARCHAR" />
+	    <result property="history_date"  		column="HISTORY_DATE" jdbcType="VARCHAR" />
+	    <result property="use_data_yn"  		column="USE_DATAYN" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<sql id="product_table">esb_PRODUCT</sql>
+	<sql id="instance_table">esb_INSTANCE</sql>
+	<sql id="instance_file_table">esb_INSTANCE_FILE</sql>
+	<sql id="project_table">esb_PROJECT</sql>
+	<sql id="group_mapping">INDIGO_GROUP_MAPPING</sql>
+
+	<sql id="instance_cols">
+	    IN_ID, PJ_ID, IN_INFO, IN_DEPLOY_YN, IN_DEPLOY_DATE, IN_START_XMS, IN_START_XMX, IN_COMPILER_OPT, IN_AUTOSTART_YN, IN_AUTOSTART_CNT, IN_EXCLUSIVE_CLASSPATH, IN_PORT
+	</sql>
+	
+	<sql id="instance_cols_org">
+	    IN_ID, PJ_ID, IN_INFO, IN_DEPLOY_YN, IN_DEPLOY_DATE, IN_START_XMS, IN_START_XMX, IN_COMPILER_OPT, IN_AUTOSTART_YN, IN_AUTOSTART_CNT, IN_PORT, IN_EXCLUSIVE_CLASSPATH
+	</sql>
+
+	<sql id="join_cols">
+	    PD.PD_ID, PD.PD_TYPE, PD.PD_ORDER, PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER,
+	    PD.IN_IM_ID,
+	   (SELECT PD_NAME  FROM esb_PRODUCT WHERE PD_ID = PD.IN_IM_ID) AS IN_IM_NAME,
+       (SELECT PD_ALIAS FROM esb_PRODUCT WHERE PD_ID = PD.IN_IM_ID) AS IN_IM_ALIAS,
+	    PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_DS_STATUS, PD.FINAL_MO_REG_DATE, PD.MO_ERROR_CNT,
+	    INS.IN_ID, INS.PJ_ID, INS.IN_INFO, INS.IN_DEPLOY_YN, INS.IN_DEPLOY_DATE,
+        INS.IN_START_XMS, INS.IN_START_XMX, INS.IN_COMPILER_OPT, INS.IN_AUTOSTART_YN, INS.IN_AUTOSTART_CNT, INS.IN_PORT,
+        PJ.PJ_NAME, INS.IN_EXCLUSIVE_CLASSPATH,  PD.PD_FAVORITE, PJ.PJ_FAVORITE, PJ.PJ_GROUP_ID
+	</sql>
+
+	<!-- <cacheModel type="MEMORY" id="TreeCasheMEM">
+		<flushOnExecute statement="esb_instance.deleteInstance"/>
+		<flushOnExecute statement="esb_instance.insertInstance"/>
+		<flushOnExecute statement="esb_product.updateProductByInstance"/>
+		<flushInterval minutes="30"/>
+	</cacheModel> -->
+
+    <select id="getEaiInstanceListByColumn" resultClass="instance" parameterClass="map">
+       select t2.*
+			from(
+			select ROWNUM row_num, t1.*
+			from(
+				select <include refid="join_cols" />
+			        from   <include refid="product_table" /> PD, <include refid="instance_table" /> INS, <include refid="project_table" /> PJ
+			        where  PD.PD_ID = INS.IN_ID
+			        and    INS.PJ_ID = PJ.PJ_ID
+			        <isNotNull property="PD_ALIAS" prepend="and">
+			            PD_ALIAS = #PD_ALIAS#
+			        </isNotNull>
+			        <isNotNull property="IN_ID" prepend="and">
+			            IN_ID = #IN_ID#
+			        </isNotNull>
+			        <isNotNull property="PD_NAME" prepend="and">
+			            PD_NAME = #PD_NAME#
+			        </isNotNull>
+			        <isNotNull property="PJ_ID" prepend="and">
+			            PJ.PJ_ID = #PJ_ID#
+			        </isNotNull>
+			        <isNotNull property="IN_IM_ID" prepend="and">
+			            PD.IN_IM_ID = #IN_IM_ID#
+			        </isNotNull>
+			        <isNotNull prepend="and" property="PD_GROUP_ID">
+			        	PD.PD_GROUP_ID = #PD_GROUP_ID#
+			        </isNotNull>
+			        order by PD.PD_ORDER, PD.PD_ALIAS
+			       )t1
+				)t2
+				<isNotNull property="SKIP_INDEX">
+					<![CDATA[
+				      	where row_num > #SKIP_INDEX#
+						AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+					]]>
+				</isNotNull>
+    </select>
+    
+    <select id="getEaiInstanceListByColumnCount" resultClass="int" parameterClass="map">
+		select count(PD.PD_ID)
+		    from   <include refid="product_table" /> PD, <include refid="instance_table" /> INS, <include refid="project_table" /> PJ
+		    where  PD.PD_ID = INS.IN_ID
+			    and    INS.PJ_ID = PJ.PJ_ID
+			    <isNotNull property="PD_ALIAS" prepend="and">
+			        PD_ALIAS = #PD_ALIAS#
+			    </isNotNull>
+			    <isNotNull property="IN_ID" prepend="and">
+			        IN_ID = #IN_ID#
+			    </isNotNull>
+			    <isNotNull property="PD_NAME" prepend="and">
+			        PD_NAME = #PD_NAME#
+			    </isNotNull>
+			    <isNotNull property="PJ_ID" prepend="and">
+			        PJ.PJ_ID = #PJ_ID#
+			    </isNotNull>
+			    <isNotNull property="IN_IM_ID" prepend="and">
+			        PD.IN_IM_ID = #IN_IM_ID#
+			    </isNotNull>
+			    <isNotNull prepend="PD_GROUP_ID" property="and">
+			        PD.PD_GROUP_ID = #PD_GROUP_ID#
+			    </isNotNull>
+		    order by PD.PD_ORDER, PD.PD_ALIAS
+    </select>
+
+    <select id="getEaiInstanceByColumnLike" resultClass="instance" parameterClass="map">
+        select <include refid="join_cols" />
+        from   <include refid="product_table" /> PD, <include refid="instance_table" /> INS, <include refid="project_table" /> PJ
+        where  PD.PD_ID = INS.IN_ID
+        and    INS.PJ_ID = PJ.PJ_ID
+        order by PD.PD_ORDER, PD.PD_ALIAS
+    </select>
+
+	<select id="getEaiInstanceListAD" resultClass="instance" parameterClass="map">
+		select PD_NAME, PD_ALIAS from <include refid="product_table" />
+		<dynamic prepend="where">
+        <isNotNull property="PD_ID">
+        IN_IM_ID = #PD_ID#
+        </isNotNull>
+        </dynamic>
+	</select>
+
+    <select id="getEaiInstancePortListAD" resultClass="instance" parameterClass="map">
+        select PD2.PD_NAME, PD2.PD_ALIAS, INS.IN_PORT
+        from   <include refid="product_table" /> PD, <include refid="product_table" /> PD2, <include refid="instance_table" /> INS
+        where  PD.PD_ID = PD2.IN_IM_ID
+        and    PD2.PD_ID = INS.IN_ID
+        <isNotNull property="PD_ID">
+        and    PD.PD_ID = #PD_ID#
+        </isNotNull>
+        order by INS.IN_PORT asc
+    </select>
+
+	<select id="getEaiInstanceCountByPjId" resultClass="Integer" parameterClass="string">
+	    select count(*)
+	    from   <include refid="instance_table" />
+	    where  PJ_ID = #value:VARCHAR:NO_ENTRY#
+	</select>
+
+	<select id="getEaiInstanceCountByInName" resultClass="Integer" parameterClass="map">
+	    select count(*)
+	    from   <include refid="product_table" />
+	    where  PD_TYPE = 'AD'
+	    and    PD_NAME = #IN_NAME:VARCHAR:NO_ENTRY#
+	    <isNotNull property="IN_ID">
+        and    PD_ID   <![CDATA[ <> ]]> #IN_ID:VARCHAR:NO_ENTRY#
+	    </isNotNull>
+	</select>
+
+	<select id="getEaiInstanceAdFileList" resultClass="instance_file" parameterClass="string">
+		SELECT F.IN_ID, F.IN_FILE_ID, F.IN_FILE_NAME, H.HISTORY_FILE_CONTS AS IN_FILE_CONTS, H.HISTORY_DATE, H.HISTORY_FILE_SIZE
+		FROM <include refid="instance_file_table" /> F, INDIGO_CMM_RESOURCE_HISTORY H
+		WHERE F.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y'
+		AND F.IN_ID = #value:VARCHAR:NO_ENTRY#
+	</select>
+
+	<select id="getEaiInstanceConfigList" resultMap="instance_file_map" parameterClass="map">
+		SELECT F.IN_ID, F.IN_FILE_ID, F.IN_FILE_NAME, H.HISTORY_FILE_CONTS AS IN_FILE_CONTS, H.HISTORY_DATE, H.HISTORY_FILE_SIZE
+		FROM <include refid="instance_file_table" /> F, INDIGO_CMM_RESOURCE_HISTORY H
+		WHERE F.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y' AND F.IN_ID = #IN_ID:VARCHAR:NO_ENTRY#
+		<isNotNull property="IN_FILE_ID">
+			AND F.IN_FILE_ID = #IN_FILE_ID:NUMERIC:-999999#
+		</isNotNull>
+	</select>
+
+	<select id="getEaiInstanceConfigListByImID" resultMap="instance_file_map" parameterClass="string">
+		SELECT A.IN_ID, A.IN_FILE_ID, A.IN_FILE_NAME, H.HISTORY_FILE_CONTS AS IN_FILE_CONTS, H.HISTORY_DATE, H.HISTORY_FILE_SIZE
+		FROM <include refid="instance_file_table" /> A, <include refid="product_table" /> B, INDIGO_CMM_RESOURCE_HISTORY H
+		WHERE A.IN_ID = B.PD_ID AND A.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y'
+		AND B.IN_IM_ID = #value:VARCHAR:NO_ENTRY#
+	</select>
+
+	<select id="getEaiInstanceConfigMainList" resultClass="instance_file" parameterClass="string">
+		select F.IN_ID, F.IN_FILE_ID, F.IN_FILE_NAME, H.HISTORY_DATE , H.HISTORY_FILE_SIZE
+		FROM <include refid="instance_file_table" /> F, INDIGO_CMM_RESOURCE_HISTORY H
+		WHERE F.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y'
+		AND F.IN_ID = #value:VARCHAR:NO_ENTRY# 
+		AND F.IN_FILE_ID in (1, 2)
+	</select>
+
+	<select id="getEaiInstanceConfigOtherList" resultClass="instance_file" parameterClass="string">
+		SELECT F.IN_ID, IN_FILE_ID, F.IN_FILE_NAME, H.HISTORY_DATE , H.HISTORY_FILE_SIZE
+		FROM <include refid="instance_file_table" /> F, INDIGO_CMM_RESOURCE_HISTORY H
+		WHERE F.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y'
+		AND F.IN_ID = #value:VARCHAR:NO_ENTRY#
+		AND F.IN_FILE_ID not in (1, 2)
+	</select>
+
+	<select id="getNextEaiInstanceConfigFileId" resultClass="Integer" parameterClass="string">
+		select max(IN_FILE_ID) + 1
+		from <include refid="instance_file_table" />
+		where IN_ID = #value:VARCHAR:NO_ENTRY#
+	</select>
+
+	<select id="getEaiInstanceConfigFileId" resultClass="Integer" parameterClass="java.util.Map">
+		select IN_FILE_ID
+		from <include refid="instance_file_table" />
+		where IN_ID = #IN_ID# AND
+		IN_FILE_NAME = #IN_FILE_NAME#
+	</select>
+
+	<select id="getFavoriteEaiInstanceList" resultClass="instance" parameterClass="java.util.Map">
+		SELECT t1.* from (select <include refid="join_cols" />
+		from <include refid="product_table" /> PD, <include refid="instance_table" /> INS, <include refid="project_table" /> PJ
+		<isNotNull property="USER_ID"> 
+			, <include refid="group_mapping" /> UMG
+		</isNotNull>
+		where PD.PD_ID = INS.IN_ID
+		and INS.PJ_ID = PJ.PJ_ID
+		<isNotNull property="USER_ID" prepend="and">
+			PD.PD_GROUP_ID = UMG.GROUP_ID
+			AND UMG.USER_ID = #USER_ID#
+		</isNotNull>
+		<isNotNull property="GROUP_ID" prepend="and">
+			PD.PD_GROUP_ID = #GROUP_ID#
+		</isNotNull> 
+		<isNotNull property="FAVORITE" prepend="and">
+			PD.PD_FAVORITE = #FAVORITE#
+		</isNotNull>) t1
+		 <dynamic prepend="where">
+		 	<isNotNull property="GROUP_ID" prepend="and">
+				t1.PJ_GROUP_ID = #GROUP_ID#
+			</isNotNull> 
+			<isNotNull property="FAVORITE" prepend="and">
+				t1.PJ_FAVORITE = #FAVORITE#
+			</isNotNull>
+		 </dynamic>
+		order by t1.PD_ORDER, t1.PD_ALIAS
+	</select>
+
+	<select id="getPageEaiInstance" resultClass="instance" parameterClass="java.util.Map">
+		select t2.*
+			from(
+				select ROWNUM row_num, t1.*
+			    from(
+						select <include refid="join_cols" />, PD.PD_STATUS
+				        from <include refid="instance_table" /> INS, <include refid="project_table" /> PJ,
+				        	(select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',
+		                            		DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+		                                    		DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'null')))) PD_STATUS , pd1.*
+                  			 from <include refid="product_table" /> pd1) PD
+				        where  PD.PD_ID = INS.IN_ID
+				        and    INS.PJ_ID = PJ.PJ_ID
+				        order by PD.PD_ORDER, PD.PD_NAME
+				) t1
+                <dynamic prepend="where">
+                	<isNotNull property="PJ_ID" prepend="and">
+				    t1.PJ_ID = #PJ_ID#
+				    </isNotNull>
+				    <isNotNull property="IN_IM_ALIAS" prepend="and">
+				    IN_IM_ALIAS LIKE '%' ||#IN_IM_ALIAS#|| '%'
+				    </isNotNull>
+				    <isNotNull property="PD_ALIAS" prepend="and">
+				    PD_ALIAS LIKE '%' ||#PD_ALIAS#|| '%'
+				    </isNotNull>
+				    <isNotNull property="pd_name" prepend="and">
+				    pd_name LIKE '%' ||#pd_name#|| '%'
+				    </isNotNull>
+				    <isNotNull property="pj_name" prepend="and">
+				    pj_name LIKE '%' ||#pj_name#|| '%'
+				    </isNotNull>
+				    <isNotNull property="im_name" prepend="and">
+				    im_name LIKE '%' ||#im_name#|| '%'
+				    </isNotNull>
+				    <isNotNull property="pj_reg_user" prepend="and">
+				    pj_reg_user LIKE '%' ||#pj_reg_user#|| '%'
+				    </isNotNull>
+				    <isNotNull property="STATUS_VALUE" prepend="and">
+				    t1.PD_STATUS = #STATUS_VALUE#
+				    </isNotNull>
+				</dynamic>  
+			) t2
+		<![CDATA[
+			where  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+
+	<select id="getTotEaiInstance"  resultClass="integer" parameterClass="java.util.Map">
+				select count(*)
+			    from(
+						select <include refid="join_cols" />, PD.PD_STATUS
+				        from <include refid="instance_table" /> INS, <include refid="project_table" /> PJ,
+				        	(select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9',
+		                              		DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+		                                    		DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'null')))) PD_STATUS , pd1.*
+                  			 from <include refid="product_table" /> pd1) PD
+				        where  PD.PD_ID = INS.IN_ID
+				        and    INS.PJ_ID = PJ.PJ_ID
+				) t1
+                <dynamic prepend="where">
+                	<isNotNull property="PJ_ID" prepend="and">
+				    t1.PJ_ID = #PJ_ID#
+				    </isNotNull>
+				    <isNotNull property="IN_IM_ALIAS" prepend="and">
+				    IN_IM_ALIAS LIKE '%' ||#IN_IM_ALIAS#|| '%'
+				    </isNotNull>
+				    <isNotNull property="PD_ALIAS" prepend="and">
+				    PD_ALIAS LIKE '%' ||#PD_ALIAS#|| '%'
+				    </isNotNull>
+				    <isNotNull property="pd_name" prepend="and">
+				    pd_name LIKE '%' ||#pd_name#|| '%'
+				    </isNotNull>
+				    <isNotNull property="pj_name" prepend="and">
+				    pj_name LIKE '%' ||#pj_name#|| '%'
+				    </isNotNull>
+				    <isNotNull property="im_name" prepend="and">
+				    im_name LIKE '%' ||#im_name#|| '%'
+				    </isNotNull>
+				    <isNotNull property="pj_reg_user" prepend="and">
+				    pj_reg_user LIKE '%' ||#pj_reg_user#|| '%'
+				    </isNotNull>
+				    <isNotNull property="STATUS_VALUE" prepend="and">
+				    t1.PD_STATUS = #STATUS_VALUE#
+				    </isNotNull>
+				</dynamic>
+	</select>
+
+    <insert id="insertInstance" parameterClass="instance">
+        insert into <include refid="instance_table" />
+            (<include refid="instance_cols" />)
+        values
+            (#in_id:VARCHAR:NO_ENTRY#, #pj_id:VARCHAR:NO_ENTRY#, #in_info:VARCHAR:NO_ENTRY#, #in_deploy_yn:VARCHAR:NO_ENTRY#, #in_deploy_date:TIMESTAMP#,
+             #in_start_xms:VARCHAR:NO_ENTRY#, #in_start_xmx:VARCHAR:NO_ENTRY#, #in_compiler_opt:VARCHAR:NO_ENTRY#, #in_autostart_yn:VARCHAR:NO_ENTRY#,
+             #in_autostart_cnt:NUMERIC:-999999#, #in_exclusive_classpath:VARCHAR:NO_ENTRY#, #in_port:VARCHAR:NO_ENTRY#)
+    </insert>
+
+	<insert id="insertInstanceFile" parameterClass="instance_file">
+		insert into
+		<include refid="instance_file_table" />
+		(IN_ID, IN_FILE_ID, IN_FILE_NAME, HISTORY_ID)
+		values
+		(#in_id:VARCHAR:NO_ENTRY#, #in_file_id:NUMERIC:-999999#, #in_file_name:VARCHAR:NO_ENTRY#,
+		#in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999#)
+	</insert>
+
+    <update id="updateInstance" parameterClass="instance">
+        update  <include refid="instance_table" />
+        set     IN_INFO          = #in_info:VARCHAR:NO_ENTRY# ,
+				IN_START_XMS     = #in_start_xms:VARCHAR:NO_ENTRY# ,
+				IN_START_XMX     = #in_start_xmx:VARCHAR:NO_ENTRY# ,
+				IN_PORT          = #in_port:VARCHAR:NO_ENTRY# ,
+				IN_COMPILER_OPT  = #in_compiler_opt:VARCHAR:NO_ENTRY# ,
+				IN_AUTOSTART_YN  = #in_autostart_yn:VARCHAR:NO_ENTRY# ,
+				IN_AUTOSTART_CNT = #in_autostart_cnt:NUMERIC:-999999#,
+				IN_EXCLUSIVE_CLASSPATH = #in_exclusive_classpath:VARCHAR:NO_ENTRY#
+        where   IN_ID = #in_id:VARCHAR:NO_ENTRY#
+    </update>
+
+	<!-- update -> delete insert 변경 -->
+    <update id="updateInstanceFile" parameterClass="instance_file">
+        update <include refid="instance_file_table" />
+        set    IN_FILE_CONTS = #in_file_conts#
+        where  IN_ID      = #in_id:VARCHAR:NO_ENTRY#
+        and    IN_FILE_ID = #in_file_id:NUMERIC:-999999#
+    </update>
+
+
+	<!-- INDIGO_CMM_RESOURCE_HISTORY ibatis start -->
+	<select id="getCountEaiinstanceConfigHistory" resultClass="integer" parameterClass="instance_file">
+		SELECT COUNT(HISTORY_ID) FROM INDIGO_CMM_RESOURCE_HISTORY
+		WHERE HISTORY_ID = #in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999#
+	</select>
+
+	<delete id="deleteEaiinstanceConfigHistory" parameterClass="instance_file">
+    	DELETE FROM INDIGO_CMM_RESOURCE_HISTORY
+		WHERE HISTORY_ID = #in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999# 
+			AND USE_DATAYN ='N' AND HISTORY_DATE = (SELECT MIN(HISTORY_DATE) FROM INDIGO_CMM_RESOURCE_HISTORY
+													WHERE HISTORY_ID = #in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999# 
+														AND USE_DATAYN ='N')
+	</delete>
+
+	<update id="updateEaiinstanceConfigHistory" parameterClass="instance_file">
+    	UPDATE INDIGO_CMM_RESOURCE_HISTORY SET USE_DATAYN ='N'
+			WHERE HISTORY_ID = #in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999#
+	</update>
+
+	<insert id="insertEaiinstanceConfigHistory" parameterClass="instance_file">
+    	INSERT INTO INDIGO_CMM_RESOURCE_HISTORY(HISTORY_ID, HISTORY_FILE_CONTS, HISTORY_FILE_SIZE, USE_DATAYN, HISTORY_VERSION, HISTORY_MEMO) 
+			VALUES(#in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999#, #in_file_conts#, #history_file_size:VARCHAR:NO_ENTRY#, 'Y',
+				  (SELECT NVL(MAX(HISTORY_VERSION)+1, 0) FROM INDIGO_CMM_RESOURCE_HISTORY where HISTORY_ID = #in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999#)
+				  ,#history_memo:VARCHAR:NO_ENTRY#
+			)
+	</insert>
+	<delete id="deleteInstanceHistoryFile" parameterClass="map">
+		DELETE FROM INDIGO_CMM_RESOURCE_HISTORY
+		WHERE HISTORY_ID = #IN_ID:VARCHAR:NO_ENTRY# || '_' || #IN_FILE_ID:NUMERIC:-999999#
+	</delete>
+	<delete id="deleteInstanceHistoryFiles" parameterClass="string">
+		DELETE FROM INDIGO_CMM_RESOURCE_HISTORY
+		WHERE HISTORY_ID LIKE #value:VARCHAR:NO_ENTRY# || '%'
+	</delete>
+	
+	<select id="selectConfigHistory" resultMap="history_file_map"  parameterClass="map">
+		SELECT F.IN_ID, F.IN_FILE_ID, F.IN_FILE_NAME, H.HISTORY_ID, H.USE_DATAYN, H.HISTORY_FILE_SIZE, H.HISTORY_FILE_CONTS,H.HISTORY_DATE, H.HISTORY_VERSION, H.HISTORY_MEMO
+	    FROM INDIGO_CMM_RESOURCE_HISTORY H, ESB_INSTANCE_FILE F 
+		WHERE H.HISTORY_ID = F.HISTORY_ID
+    		AND H.HISTORY_ID =  #in_id:VARCHAR:NO_ENTRY# || '_' || #in_file_id:NUMERIC:-999999# ORDER BY HISTORY_DATE DESC
+	</select>
+	
+	<select id="selectConfigHistoryXml" resultClass="instance_file"  parameterClass="map">
+		SELECT HISTORY_FILE_CONTS AS IN_FILE_CONTS FROM INDIGO_CMM_RESOURCE_HISTORY
+		WHERE HISTORY_ID = #HISTORY_ID:VARCHAR:NO_ENTRY# AND HISTORY_DATE = #HISTORY_DATE:VARCHAR:NO_ENTRY# 
+	</select>
+	
+	<update id="configFileHistoryUpdate" parameterClass="map">
+    	UPDATE INDIGO_CMM_RESOURCE_HISTORY SET USE_DATAYN ='Y'
+			WHERE HISTORY_ID = #HISTORY_ID:VARCHAR:NO_ENTRY# AND HISTORY_DATE = #HISTORY_DATE:VARCHAR:NO_ENTRY# 
+	</update>
+	<!-- INDIGO_CMM_RESOURCE_HISTORY ibatis end -->
+
+   <delete id="deleteInstance" parameterClass="string">
+        delete from <include refid="instance_table" />
+        where  IN_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+
+    <delete id="deleteInstanceFile" parameterClass="map">
+        delete from <include refid="instance_file_table" />
+        where  IN_ID = #IN_ID:VARCHAR:NO_ENTRY#
+	    and    IN_FILE_ID = #IN_FILE_ID:NUMERIC:-999999#
+    </delete>
+
+    <delete id="deleteInstanceFiles" parameterClass="String">
+        delete from <include refid="instance_file_table" />
+        where  IN_ID = #value:VARCHAR:NO_ENTRY#
+    </delete>
+
+    <update id="updateDeployOperation" parameterClass="map">
+        update <include refid="instance_table" />
+        set    IN_DEPLOY_YN   = #IN_DEPLOY_YN:VARCHAR:NO_ENTRY# ,
+               IN_DEPLOY_DATE = #IN_DEPLOY_DATE:TIMESTAMP#
+        where  IN_ID = #IN_ID:VARCHAR:NO_ENTRY#
+    </update>
+
+	<!-- // Adapter Copy/Move (inserted by kangnaru 2012-02-20) -->
+    <insert id="copyInstance" parameterClass="instance">
+        insert into <include refid="instance_table" />
+            (<include refid="instance_cols_org" />)
+        (select
+        	#in_id:VARCHAR:NO_ENTRY#, #pj_id:VARCHAR:NO_ENTRY#, IN_INFO, 'N' as IN_DEPLOY_YN, IN_DEPLOY_DATE, IN_START_XMS,
+			IN_START_XMX, IN_COMPILER_OPT, IN_AUTOSTART_YN, IN_AUTOSTART_CNT, #in_port:VARCHAR:NO_ENTRY#, IN_EXCLUSIVE_CLASSPATH
+		 from <include refid="instance_table" />
+			where IN_ID = #old_in_id:VARCHAR:NO_ENTRY#)
+    </insert>
+
+	<!-- 2013 08 16 어댑터복사 쿼리 수정 -->
+    <insert id="copyInstanceFile" parameterClass="instance_file">
+        INSERT INTO esb_INSTANCE_FILE(IN_ID, IN_FILE_ID, IN_FILE_NAME, IN_FILE_CONTS, HISTORY_ID)
+        (SELECT
+        	#in_id:VARCHAR:NO_ENTRY#,  F.IN_FILE_ID, F.IN_FILE_NAME, null, #in_id:VARCHAR:NO_ENTRY# || '_' ||  F.IN_FILE_ID
+		 FROM  esb_INSTANCE_FILE F, INDIGO_CMM_RESOURCE_HISTORY H
+			WHERE F.HISTORY_ID = H.HISTORY_ID AND  F.IN_ID = #old_in_id:VARCHAR:NO_ENTRY# AND H.USE_DATAYN = 'Y')
+    </insert>
+    
+    <insert id="copyhistoryFile" parameterClass="instance_file">
+        INSERT INTO INDIGO_CMM_RESOURCE_HISTORY(HISTORY_ID,HISTORY_FILE_CONTS,HISTORY_FILE_SIZE,USE_DATAYN,HISTORY_VERSION,HISTORY_MEMO)
+        (SELECT
+        	#in_id:VARCHAR:NO_ENTRY# || '_' ||  F.IN_FILE_ID, H.HISTORY_FILE_CONTS, H.HISTORY_FILE_SIZE, 'Y', 0, HISTORY_MEMO 
+		 FROM  esb_INSTANCE_FILE F, INDIGO_CMM_RESOURCE_HISTORY H
+			WHERE F.HISTORY_ID = H.HISTORY_ID AND  F.IN_ID = #old_in_id:VARCHAR:NO_ENTRY# AND H.USE_DATAYN = 'Y')
+    </insert>
+    
+    <update id="updateChangeAdForPropertyName" parameterClass="map">
+	UPDATE ESB_INSTANCE_FILE
+	SET IN_FILE_NAME = #NEW_FILE_NAME:VARCHAR:NO_ENTRY#
+	WHERE IN_ID = #IN_ID:VARCHAR:NO_ENTRY#
+	AND IN_FILE_NAME = #IN_FILE_NAME:VARCHAR:NO_ENTRY#
+    </update>
+
+    <update id="moveInstance" parameterClass="instance">
+        update <include refid="instance_table" />
+        set
+        	PJ_ID = #pj_id:VARCHAR:NO_ENTRY#
+		where IN_ID = #old_in_id:VARCHAR:NO_ENTRY#
+    </update>
+
+    <update id="updateInstanceProjectId" parameterClass="map">
+        update <include refid="instance_table" />
+        set
+        	PJ_ID = #PROJECT_ID:VARCHAR:NO_ENTRY#
+		where IN_ID = #INSTANCE_ID:VARCHAR:NO_ENTRY#
+    </update>
+
+    <update id="updateInstanceFavorite" parameterClass="map">
+        update <include refid="product_table" />
+        set    PD_FAVORITE  = #FAVORITE#
+        where  PD_ID = #INSTANCE_ID:VARCHAR:NO_ENTRY#
+    </update>
+    
+    <!-- 공통리소스 -->
+	<select id="getCommonResourceFile" resultClass="Integer" parameterClass="map">
+		select count(IN_ID)
+	    from   <include refid="instance_file_table" />
+	    where IN_ID = #IN_ID:VARCHAR:NO_ENTRY# 
+	      and IN_FILE_NAME = #IN_FILE_NAME:VARCHAR:NO_ENTRY#
+	</select>
+	
+	<select id="getEaiInstanceConfigForFileNameList" resultMap="instance_file_map" parameterClass="map">
+	    SELECT F.IN_ID, F.IN_FILE_ID, F.IN_FILE_NAME, H.HISTORY_FILE_CONTS AS IN_FILE_CONTS, H.HISTORY_DATE, H.HISTORY_FILE_SIZE
+	    FROM   <include refid="instance_file_table" /> F, INDIGO_CMM_RESOURCE_HISTORY H
+	    WHERE  F.HISTORY_ID = H.HISTORY_ID AND H.USE_DATAYN = 'Y'
+	    AND  F.IN_ID = #IN_ID:VARCHAR:NO_ENTRY#
+	    AND  F.IN_FILE_NAME = #IN_FILE_NAME:VARCHAR:NO_ENTRY#
+	</select>
+	
+	<select id= "getPdId" parameterClass="string" resultClass = "string">
+		select PD_ID from esb_product where PD_NAME = #pd_name#
+	</select>
+	
+	<update id="updateAdaptorInstance" parameterClass="map">
+		update <include refid="instance_table" />
+		SET  IN_START_XMS = #in_start_xms#,
+			 IN_START_XMX = #in_start_xmx#,
+			 IN_AUTOSTART_YN = #in_autostart_yn#,
+			 IN_AUTOSTART_CNT = #in_autostart_cnt#,
+			 IN_PORT = #in_port#
+		WHERE IN_ID = #pd_id#
+	</update>
+	
+	<update id="updateAdaptorProduct" parameterClass="map">
+		update <include refid="product_table"/>
+		SET  FINAL_MO_REG_DATE = #mTime#
+		WHERE PD_ID = #pd_id#	 
+	</update>
+	
+	<select id = "getExistenceAdaptor" parameterClass="map" resultClass = "string">
+		SELECT PD_ALIAS
+		FROM <include refid="product_table" />
+		WHERE PD_ID = #PD_NAME# AND IN_IM_ID = #PD_ID#
+	</select>
+	
+	<select id="getProjectNameByInid" parameterClass="map" resultClass="string">
+		SELECT PJ_NAME 
+		FROM <include refid="project_table" /> 
+		WHERE PJ_ID = (SELECT PJ_ID FROM <include refid="instance_table" /> WHERE IN_ID=#in_id#)
+	</select>
+</sqlMap>

@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 컴포넌트 등록 시 알파벳 순으로 등록 -->
+<componentConfigure type="endpoint">
+	<component type="indigoAssert" alias="AssertEquals" icon="AssertEquals.png" isUse="false">
+		<uri>
+			<host name="equals" inputType="hidden" default="equals"/>
+			<query name="checkKey" alias="Compare Data" inputType="extEditor" option="IndigoModeler.view.center.property.MessageTypeSelectEditor" required="true"/>
+			<query name="checkValue" alias="Compare Value" required="true"/>
+			<query name="errorKey" alias="Error Data" inputType="extEditor" option="IndigoModeler.view.center.property.MessageTypeSelectEditor" />
+			<query name="errorMessage" alias="Default Error Message"/>
+		</uri>
+	</component>
+	<component type="bean" alias="Bean" icon="MessageEndpoint.png" isUse="false">
+		<uri>
+			<host name="ref" alias="Bean Ref" inputType="ref" option="custombean" required="true">
+				<description>
+					사용자 개발 클래스 사용
+					Bean Configuration CustomBean를 등록해 주십시오.
+				</description>
+			</host>
+			<query name="method" alias="Method" validationExpression="" required="true">
+				<description>
+					CustomBean 클래스의 메소드 명을 입력해 주십시오.
+				</description>
+			</query>
+		</uri>
+	</component>
+	<component type="internal" alias="BridgePoint" icon="Security.png">
+		<uri>
+			<component name="component" alias="Protocol" default="direct" inputType="protocol" option="IndigoModeler.view.center.property.BridgePointProtocolEditor" required="true"/>
+			<host name="uri" alias="Endpoint URI" inputType="bridge" option="IndigoModeler.view.center.property.BridgePointEndpointURIEditor" required="true"/>
+		</uri>
+	</component>
+	<component type="indigoCompress" alias="Compress" icon="Process.png" isUse="false">
+		<uri>
+			<host name="operation" alias="Operation" inputType="select" option="['compress','decompress']" required="true"/>
+			<query name="zipDelete" alias="Temp File Delete" inputType="boolean" default="true"/>
+			<query name="compressor" alias="Custom Compressor" inputType="ref" option="custombean"/>
+		</uri>
+	</component>
+	<!-- SQL Excutor로 변경 -->
+	<component isUse="true" type="indigoDBReader" alias="DBReader" icon="dbcp_1.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.IndigoDBReaderEndpointParser">
+		<uri>
+			<component name="component" inputType="hidden" default="indigoDB"/>
+			<host name="dataSource" alias="Data Source" inputType="ref" option="dbcp" required="true"/>
+			<query name="selectType" alias="Select Type" inputType="select" default="Table" option="['Table', 'Procedure']"/>
+			<query name="ifId" alias="Interface Id" required="true"/>
+			<query name="delay" alias="Timer Interval(ms)" inputType="number" default="3000"/>
+			<query name="query" alias="Select Query" inputType="extEditor" option="IndigoModeler.view.center.property.PropMybatisQueryEditor" required="true"/>
+			<query name="type" alias="Message Type" inputType="select" default="Object" option="['Obejct', 'XML', 'File']"/>
+			<query name="maxCount" alias="Select Row Count" inputType="number" default="-1"/>
+			<query name="useUpdate" alias="Use Status Update" inputType="select" default="false" option="['true','false']"/>
+			<query name="doneQuery" alias="Status Update Query" inputType="extEditor" option="IndigoModeler.view.center.property.PropMybatisQueryEditor"/>
+			<query name="isMulti" alias="Parallel Processing" inputType="select" default="true" option="['true','false']"/>
+			<query name="threadCount" alias="Thread Count" inputType="number" default="5" compare="data['isMulti'] =='true'"/>
+			<query name="maxRowCount" alias="Message Count Per Thread" inputType="number" default="3000" compare="data['isMulti']=='true'"/>
+		</uri>
+	</component>
+	<component isUse="false" type="indigoDBWriter" alias="DBWriter" icon="dbcp_1.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.IndigoDBWriterEndpointParser">
+		<uri>
+			<component name="component" inputType="hidden" default="indigoDB"/>
+			<host name="dataSource" alias="Data Source" inputType="ref" option="dbcp" required="true"/>
+			<query name="query" alias="Query" inputType="extEditor" option="IndigoModeler.view.center.property.PropSQLBuilderInsertEditor"/>
+		</uri>
+	</component>
+	<component type="fileReader" alias="FileReader" icon="FileMove.png">
+		<uri>
+			<host name="filePath" alias="FilePath" default="" required="true"/>
+			<!-- <query name="charset" alias="Charset"/> -->
+		</uri>
+	</component>
+	<component type="file" alias="FileWriter" icon="FileMove.png">
+		<uri>
+			<host name="filePath" alias="FilePath" default="" required="true"/>
+			<!-- <query name="fileMove" alias="File Move" default="false" inputType="boolean"/> -->
+			<query name="charset" alias="Charset" default="UTF-8"/>
+			<query name="delay" alias="Delay" default="10000"/>
+		</uri>
+	</component>
+	<component type="ftpreader" alias="FTPReader" icon="FTP.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.FTPEndpointParser">
+		<uri>
+			<host name="uri" alias="URI" default="ftp://" required="true"/>
+			<query name="username" alias="User" required="true"/>
+			<query name="password" alias="Password" required="true"/>
+			<query name="binary" alias="Binary" default="true" inputType="boolean"/>
+			<query name="localWorkDirectory" alias="Local Directory" default="./temp"/>
+			<query name="move" alias="Move path" default=".done"/>
+			<query name="moveFailed" alias="Move Failed path"/>
+			<query name="listFile" alise="List File" default="false" inputType="boolean"/>
+			<!--  <query name="delay" alias="Delay" default="10000" inputType="number"/> -->
+		</uri>
+	</component>
+	<component type="ftpwriter" alias="FTPWriter" icon="FTP.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.FTPEndpointParser">
+		<uri>
+			<host name="uri" alias="URI" default="ftp://" required="true"/>
+			<query name="username" alias="User" required="true"/>
+			<query name="password" alias="Password" required="true"/>
+			<query name="binary" alias="Binary" default="true" inputType="boolean"/>
+		</uri>
+	</component>
+	<component type="jetty" alias="HTTP" icon="CXF-RS.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.HttpEndpointParser">
+		<uri>
+			<host name="uri" alias="URI" default="http://0.0.0.0" required="true"/>
+			<query name="httpClient.timeout" alias="Timeout" default="30000" inputType="number"/>
+			<query name="matchOnUriPrefix" alias="Match URI Prefix" default="false" inputType="boolean"/>
+			<query name="throwExceptionOnFailure" alias="Throw Exception Failure" default="false" inputType="boolean"/>
+		</uri>
+	</component>
+	<!-- <component type="jca" alias="JCA" icon="MessageEndpoint.png">
+		<uri>
+			<host name="jca" alias="JCA" />
+		</uri>
+	</component> -->
+	<component type="log" alias="Log" icon="Log.png" isUse="true" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.LogEndpointParser" >
+		<uri>
+			<query name="message" alias="Message" default="${body}"/>
+			<query name="loggingLevel" alias="Level" default="INFO" inputType="select" option="['DEBUG','INFO','WRAN','ERROR']"/>
+		</uri>
+	</component>
+	<component type="indigoTransformer" alias="MappingVariable" icon="Mapping.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.IndigoTransformerEndpointParser" isUse="false">
+		<uri>
+			<component name="component" inputType="hidden" default="indigoTransformer"/>
+			<host name="transformerId" alias="Transformer Id" inputType="extEditor" option="IndigoModeler.view.center.property.TransformerEditor" required="true" />
+		</uri>
+	</component>
+	<component type="pop3" alias="Mail" icon="SMTP.png">
+		<uri>
+			<host name="pop3" alias="URI" default="//" required="true"/>
+			<query name="username" alias="User" required="true"/>
+			<query name="password" alias="Password" required="true"/>
+			<query name="delete" alias="delete" default="true"/>
+			<query name="unseen" alias="unseen" default="true"/>
+			<query name="consumer.delay" alias="consumer.delay" default="10000"/>
+			<query name="contentType" alias="contentType" default="text/xml"/>
+		</uri>
+	</component>
+	<component type="indigoTransfer" alias="MessageQueue" icon="JMS.png">
+		<uri>
+			<host name="ip" alias="IP" required="true" default="localhost"/>
+			<host name="port" alias="Port" required="true" default="24211"/>
+			<host name="queueName" alias="Queue Name" required="true" default="ROUTE.IN"/>
+			<query name="consumerCount" alias="Consumer Count" inputType="number" default="10"/>
+			<query name="resultQueueName" alias="Result Queue Name" required="false" default="RETURN.IN"/>
+			<!-- <query name="destId" alias="Dest ID" required="false"/> -->
+		</uri>
+	</component>
+	<component type="mapConvertor" alias="MapConvertor" icon="Mapping.png" isUse="false">
+		<uri>
+			<host name="processor" inputType="hidden"  default="map"/>
+			<query name="charset" alias="Charset" default="EUC-KR"/>
+			<query name="messageType" alias="Message Type" inputType="select" option="['XML','DELIMITER']" default="XML"/>
+			<query name="rowPath" alias="Row xpath" default="/root/sndbizdata/rows" compare="data['messageType']=='XML')"/>
+			<query name="delimiter" alias="Delimiter" default="," compare="data['messageType']=='DELIMITER'"/>
+		</uri>
+	</component>
+	<component type="indigoProcessor" alias="Processor" icon="Process.png">
+		<uri>
+			<host name="ref" alias="Processor Ref" inputType="ref" option="custombean" required="true"/>
+			<!-- <query name="method" alias="Method" validationExpression="" required="true">
+				<description>
+					CustomBean 클래스의 메소드 명을 입력해 주십시오.
+				</description>
+			</query> -->
+		</uri>
+	</component>
+	<component type="quartz2" alias="Scheduler" icon="Quartz2.png" isUse="true" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.Quartz2EndpointParser">
+		<uri>
+			<!-- <query name="serviceName" alias="Service Name" required="true" /> -->
+			<query name="triggerType" alias="Type" inputType="select" option="['Simple', 'Cron']" default="Cron" required="true" />
+			<query name="repeatCount" alias="Repeat Count" compare="data['triggerType']=='Simple'" default="-1" inputType="number" required="true" />
+			<query name="repeatInterval" alias="Repeat Interval" compare="data['triggerType']=='Simple'" default="1000" inputType="number" required="true" />
+			<query name="cron" alias="Cron" compare="data['triggerType']=='Cron'" inputType="extEditor" option="IndigoModeler.view.center.property.Quartz2CronEditor" required="true" />
+		</uri>
+		<bean>
+			<prop name="org.quartz.threadPool.threadCount" alias="Thread count" default="1"/>
+		</bean>
+	</component>
+	<component type="cxfrs" alias="Rest" icon="CXF-RS.png" isUse="false">
+		<uri>
+			<host name="prefix" default="bean" inputType="hidden"/>
+			<host name="cxfref" alias="Rest Ref" inputType="ref" option="cxfrs" required="true" />
+		</uri>
+	</component>
+	<component type="restlet" alias="Rest" icon="CXF-RS.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.RestletEndpointParser">
+		<uri>
+			<host name="restletUri" default="http://0.0.0.0" alias="Restlet Uri" inputType="extEditor" option="IndigoModeler.view.center.property.PropRestletEditor" required="true" />
+			<query name="restletMethod" alias="Restlet Method" inputType="select" option="['get','put','post','patch','delete','head','trace','connect']" default="get" />
+			<query name="restletRealm" alias="Restlet Realm" inputType="ref" option="custombean" />
+		</uri>
+	</component>
+	<!-- <component type="sca" alias="SCA" icon="MessageEndpoint.png">
+		<uri>
+			<host name="sca" alias="SCA" />
+		</uri>
+	</component> -->
+	<!-- <component type="smtp" alias="SMTP" icon="SMTP.png">
+		<uri>
+			<host name="smtp" alias="SMTP" />
+		</uri>
+	</component> -->
+	<!-- <component type="bean" alias="Bean" img="Bean.png">
+		<uri>
+			<host name="ref" alias="Bean Ref" inputType="ref" option="custombean" required="true">
+				<description>
+					사용자 개발 클래스 사용
+					Bean Configuration CustomBean를 등록해 주십시오.
+				</description>
+			</host>
+			<query name="method" alias="Method" validationExpression="" required="true">
+				<description>
+					CustomBean 클래스의 메소드 명을 입력해 주십시오.
+				</description>
+			</query>
+		</uri>
+	</component> -->
+	<!-- <component type="indigomq" alias="IndigoMQ" img="ActiveMQ.png">
+		<uri>
+			<component name="component" alias="IndigoMQ Connection" inputType="ref" option="mq"/>
+			<host name="queuetype" alias="Type" default="queue" inputType="select" option="['queue','topic']"/>
+			<host name="queuename" alias="Destination Name" default=""/>
+		</uri>
+		<attr name="pattern" alias="Pattern" default="InOut" inputType="select" option="['InOut','InOnly']"/>
+	</component> -->
+	
+	<component type="sapfn" alias="SAP" icon="SAP.png">
+		<uri>
+			<host name="connectionFactory" alias="SAP Connection Ref" inputType="ref" option="sapfn" required="true">
+				<description>
+					SAP 연결정보를 등록해 주십시오.
+				</description>
+			</host>
+			<!-- <query name="destinationName" alias="Destination Name" required="true"/> -->
+			<query name="functionName" alias="Function Name" required="true"/>
+			<!-- <query name="inParamStrucName" alias="InParamStrucName" required="true"/>
+			<query name="outParamStrucName" alias="OutParamStrucName" required="true"/>
+			<query name="inTableName" alias="InTableName" required="true"/>
+			<query name="outTableName" alias="OutTableName" required="true"/> -->
+		</uri>
+		
+	</component>
+	
+	<component type="ssh" alias="SSH" icon="Process.png">
+		<uri>
+			<host name="host" alias="HOST" default="localhost:22" required="true"/>
+			<query name="username" alias="User Name" required="true"/>
+			<query name="password" alias="Password" required="true"/>
+		</uri>
+	</component>
+	
+	<component type="indigoSecurity" alias="Security" icon="Security.png" isUse="false">
+		<uri>
+			<host name="operation" alias="Operation" inputType="select" option="['encrypt','decrypt']" required="true"/>
+			<query name="securityKey" alias="Security Key" default="KEY"/>
+			<query name="securitor" alias="Custom Securitor" inputType="ref" option="custombean"/>
+		</uri>
+	</component>
+	<component type="indigoSch" alias="Scheduler" icon="Quartz2.png" isUse="false">
+		<uri>
+			<host name="timer" alias="Scheduler Ref" inputType="ref" option="indigosch" required="true" />
+		</uri>
+	</component>
+	<component type="timer" alias="SimpleTimer" icon="Quartz2.png" isUse="false">
+		<uri>
+			<host name="timer" alias="Timer Name"/>
+			<query name="period" alias="Period(ms)" default="1000" inputType="number"/>
+		</uri>
+	</component>
+	<component type="iBatchReader" alias="DBBatchReader" icon="SQL.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.RefIDAutoParser" isUse="false">
+		<!-- bean start -->
+		<bean>
+			<prop name="iBatchDs" alias="DataSource" inputType="extEditor" option="IndigoModeler.view.center.property.PropIBatchDataSourceEditor" required="true" />
+			<prop name="iBatchType" alias="Type" default="SELECT" required="true" />
+			<prop name="iBatchQuery" alias="Query" inputType="extEditor" option="IndigoModeler.view.center.property.PropIBatchQueryEditor" required="true" />
+			<!-- reader option -->
+			<prop name="iBatchRealTimeCount" alias="RealTimeCount" default="true" inputType="boolean" required="true" />
+			<prop name="iBatchTotalRowCount" alias="TotalRowCount" default="100000" inputType="number" required="true" />
+			<prop name="iBatchMaxRowCount" alias="MaxRowCount" default="100000" inputType="number" required="true" />
+		</bean>
+	</component>
+	<component type="iBatchWriter" alias="DBBatchWriter" icon="SQL.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.RefIDAutoParser" isUse="false">
+		<!-- bean start -->
+		<bean>
+			<prop name="iBatchDs" alias="DataSource" inputType="extEditor" option="IndigoModeler.view.center.property.PropIBatchDataSourceEditor" required="true" />
+			<prop name="iBatchType" alias="Type" default="INSERT" required="true" />
+			<prop name="iBatchQuery" alias="Query" inputType="extEditor" option="IndigoModeler.view.center.property.PropIBatchQueryEditor" required="true" />
+			<!-- writer option -->
+			<prop name="iBatchBatchCount" alias="BatchCount" default="1000" inputType="number" required="true" />
+			<prop name="iBatchCommitCount" alias="CommitCount" default="5000" inputType="number" required="true" />
+			<prop name="iBatchMaxQueueCount" alias="MaxQueueCount" default="1000" inputType="number" required="true" />
+			<prop name="iBatchThreadCount" alias="ThreadCount" default="1" inputType="number" required="true" />
+			<prop name="iBatchMaxPollTime" alias="MaxPollTime" default="1000" inputType="number" required="true" />
+			<prop name="iBatchIsMulti" alias="IsMulti" default="false" inputType="boolean" required="true" />
+		</bean>
+	</component>
+	<component type="mybatis" alias="SQLExecutor" icon="SQL.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.MybatisEndpointParser">
+		<!-- bean start -->
+		<bean>
+			<prop name="mybatisDs" alias="DataSource" inputType="extEditor" option="IndigoModeler.view.center.property.PropMybatisDataSourceEditor" required="true" />
+			<!-- <prop name="mybatisType" alias="Type" default="SELECT" inputType="extEditor" option="IndigoModeler.view.center.property.PropMybatisQueryTypeEditor" required="true" />
+			<prop name="mybatisQuery" alias="Query" inputType="extEditor" option="IndigoModeler.view.center.property.PropMybatisQueryEditor" required="true" /> -->
+		</bean>
+		<uri>
+			<query name="mybatisType" 	alias="Type" 				 inputType="extEditor" 	default="SELECT" option="IndigoModeler.view.center.property.PropMybatisQueryTypeEditor" required="true" />
+			<query name="mybatisQuery" 	alias="Query" 				 inputType="extEditor" 	option="IndigoModeler.view.center.property.PropMybatisQueryEditor" required="true" />
+			<query name="useFile" 		alias="Use File" 			 inputType="boolean" 	default="false" compare="data['mybatisType']=='SELECT'"/>
+			<query name="executorType" 	alias="Executor Type" 		 inputType="select" 	default="SIMPLE" option="['SIMPLE','BATCH']" compare="data['mybatisType']!='SELECT'"/>
+			<query name="useOnlyHeader" alias="Use OnlyHeader" 		 inputType="boolean" 	default="false"/>
+			<query name="noDataRouteStop" alias="No Data Route Stop" inputType="boolean" 	default="true" compare="data['mybatisType']=='SELECT'"/>
+			<query name="batchCount"	alias="Batch Count" 		 inputType="number" 	default="100000" compare="data['mybatisType']!='SELECT' &amp;&amp; data['executorType']=='BATCH'"/>
+			<query name="useCached" alias="Use Cached" inputType="select" 	default="true" option="['true','false']" compare="data['mybatisType']=='SELECT'"/>
+			<query name="maxSize" alias="Max Size" inputType="number" 	default="5000" compare="data['useCached'] =='true'"/>
+		</uri>
+		<!-- bean end -->
+		<!-- <uri>
+			<component name="component" alias="SQL Executor" inputType="extEditor" option="IndigoModeler.view.center.property.PropSQLExecutorCompEditor" required="true"/>
+			<host name="interfaceId" alias="Interface Id" inputType="extEditor" option="IndigoModeler.view.center.property.PropSQLExecutorIfIdEditor" required="true"/>
+			<host name="queryId" alias="Query Id" inputType="extEditor" option="IndigoModeler.view.center.property.PropSQLExecutorQueryIdEditor" required="true"/>
+			<query name="subPart_detail" default="" inputType="hidden"/>
+			<query name="statementType" default="" inputType="hidden"/>
+			<query name="dupDataCheckQuery" alias="dupDataCheckQuery"/>
+			<query name="dupDataUpdateQuery" alias="dupDataUpdateQuery"/>
+			<query name="failedStatement" alias="Failed Query Id" inputType="extEditor" option="IndigoModeler.view.center.property.PropSQLExecutorQueryIdEditor"/>
+			<query name="useFile" alias="Use File" default="false" inputType="boolean"/>
+			<query name="type" alias="Result Type" default="OBJECT" inputType="select" option="['OBJECT','XML','XMLFILE']"/>
+			<query name="xsltPath" alias="Xslt" default="" compare="data['type']=='XMLFILE'" inputType="extEditor" option="IndigoModeler.view.center.property.XsltEditor"/>
+			<query name="totalRowCount" alias="Total Row Count" inputType="number" default="100000" compare="data['type']=='XMLFILE'"/>
+			<query name="maxFileRow" alias="Max File Row" inputType="number" default="10000" compare="data['type']=='XMLFILE'"/>
+			<query name="threadCount" alias="Thread Count" inputType="number" default="10" compare="data['type']=='XMLFILE'"/>
+			<query name="outputPath" alias="Temp File Path" default="./service/temp" compare="data['type']=='XMLFILE'"/>
+			<query name="outputEncoding" alias="Encoding" default="UTF-8" compare="data['type']=='XMLFILE'"/>
+		</uri> -->
+	</component>
+	
+	<component type="process" alias="Processor" icon="Process.png" tagName="process">
+		<attr name="ref" alias="Processor Ref" inputType="ref" option="custombean"/>
+	</component>
+	
+	<component type="netty" alias="TCP" icon="CXF-RS.png">
+		<uri>
+			<host name="uri" alias="URI" default="tcp://"/>
+			<query name="encoding" alias="Encoding" default="EUC-KR" />
+			<query name="sync" alias="Sync" default="true" inputType="boolean"/>
+			<query name="textline" alias="Textline" default="true" inputType="boolean"/>
+		</uri>
+	</component>
+	<component type="velocity" alias="TemplateXml" icon="Mapping.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.VelocityEndpointParser" isUse="false">
+		<uri>
+			<component name="component" inputType="hidden" default="velocity"/>
+			<host name="filename" alias="filename" required="true" inputType="extEditor" option="IndigoModeler.view.center.property.VelocityEditor" />
+		</uri>
+	</component>
+	<component type="cxf" alias="WebService" icon="CXF-RS.png" parserClass="com.indigo.web.visualization.modeler.parser.component.endpoint.WebServiceEndpointParser">
+		<uri>
+			<host name="prefix" default="bean" inputType="hidden"/>
+			<query name="dataFormat" alias="Data Format" default="PAYLOAD" inputType="select" option="['POJO','PAYLOAD','MESSAGE']"/>
+			<query name="useType" default="true"  inputType="hidden" />
+		</uri>
+		<!-- bean start -->
+		<bean>
+			<!-- <prop name="cxfId" alias="아이디" default="" required="true" /> -->
+			<!-- <prop name="cxfWsdl" alias="WSDL" inputType="extEditor" option="IndigoModeler.view.center.property.PropWebServiceWSDLEditor" required="true" /> -->
+			<prop name="cxf_wsdlURL" alias="WSDL" inputType="extEditor" option="IndigoModeler.view.center.property.PropWebServiceWSDLEditor" required="true" />
+			<prop name="cxf_namespace" alias="네임스페이스" default="" required="true" />
+			<prop name="cxf_serviceName" alias="서비스 이름" default="" required="true" />
+			<prop name="cxf_endpointName" alias="포트 이름" inputType="extEditor" option="IndigoModeler.view.center.property.PropCxfPortnameEditor" required="true" />
+			<prop name="soap_version" alias="SOAP 버전" inputType="select" default="1.1" option="['1.1', '1.2']" required="true" />
+			<!-- <prop name="cxfSOAPHeaderUseYn" alias="SOAP 헤더 사용" inputType="boolean" default="false" required="true" />
+			<prop name="cxfMessageLogUseYn" alias="메시지 로그 사용" inputType="boolean" default="false" required="true" /> -->
+			<prop name="cxf_address" alias="서비스 주소" default="" required="true" />
+		</bean>
+		<!-- bean end -->
+	</component>
+	<component type="xslt" alias="Xslt" icon="XSLT.png">
+		<uri>
+			<host name="xsltFile" alias="Xslt File" inputType="extEditor" option="IndigoModeler.view.center.property.XsltEditor" required="true" />
+		</uri>
+	</component>
+</componentConfigure>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="notify">
+	<typeAlias alias="notifySearchModel" type="com.indigo.web.agent.communication.model.NotifyMessageSearchModel"/>
+	<typeAlias alias="notifyModel" type="com.indigo.web.agent.communication.model.NotifyMessageModel"/>
+	 
+	<insert id="insertNotifyMessage" parameterClass="notifyModel">
+		INSERT INTO ESB_NOTIFY_MESSAGE (MESSAGE_ID, MESSAGE_STATUS, COMPONENT_NAME, CREATE_DATE, MESSAGE_CONTENT)
+		VALUES (#message_id#,#message_status#,#component_name#,to_date(#create_date#,'yyyymmddhh24miss'),#message_content#)
+    </insert>
+
+	<update id="updateNotifyMessageDone" parameterClass="string">
+		UPDATE ESB_NOTIFY_MESSAGE
+		SET DONE_YN = 'Y', 
+		    DONE_DATE = SYSDATE
+		WHERE MESSAGE_ID = #value#
+    </update>
+    
+    <delete id="deleteNotifyMessage" parameterClass="string">
+		DELETE FROM ESB_NOTIFY_MESSAGE
+		WHERE MESSAGE_ID = #value#
+    </delete>
+    
+    <delete id="deleteAllNotifyMessage" parameterClass="string">
+		DELETE FROM ESB_NOTIFY_MESSAGE
+    </delete>    
+
+	<select id="selectNotifyMessage" parameterClass="notifySearchModel" resultClass="notifyModel">
+		select t.*
+			from(
+				SELECT ROW_NUMBER() OVER() row_num,
+					   T2.*
+				FROM(
+					SELECT MESSAGE_ID, 
+						   MESSAGE_STATUS, 
+						   COMPONENT_NAME, 
+						   CREATE_DATE as CREATE_DATE, DONE_YN, 
+						   DONE_DATE, 
+						   MESSAGE_CONTENT
+					FROM ESB_NOTIFY_MESSAGE
+					<dynamic prepend="WHERE">
+						<isNotEmpty prepend="AND" property="componentName">
+						 COMPONENT_NAME = #componentName#
+						</isNotEmpty>
+						<isNotEmpty prepend="AND" property="search">
+						 MESSAGE_CONTENT LIKE '%' ||#search#|| '%'
+						</isNotEmpty>
+						<isNotEmpty prepend="AND" property="startTime">
+						 CREATE_DATE BETWEEN #startTime# || '000000' AND #endTime# || '235959'
+						</isNotEmpty>
+						<isNotEmpty prepend="AND" property="messageStatus">
+						 MESSAGE_STATUS = #messageStatus#
+						</isNotEmpty>
+						<isEqual prepend="AND" property="isNew" compareValue="true">
+						 DONE_YN = 'N'
+						</isEqual>
+					</dynamic>
+					ORDER BY CREATE_DATE DESC
+				)T2
+			) t
+			where  row_num <![CDATA[ > ]]> #offset#
+			AND  row_num <![CDATA[ <= ]]> cast(#offset# as integer) + cast(#limit# as integer)
+    </select>
+
+	<select id="selectTotalNotifyMessageCount" parameterClass="notifySearchModel" resultClass="int">
+		SELECT count(*)
+		FROM ESB_NOTIFY_MESSAGE
+		<dynamic prepend="WHERE">
+			<isNotEmpty prepend="AND" property="componentName">
+			 COMPONENT_NAME = #componentName#
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="search">
+			 MESSAGE_CONTENT LIKE '%' ||#search#|| '%'
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="startTime">
+			 CREATE_DATE BETWEEN #startTime# ||'000000' AND #endTime# || '235959'
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="messageStatus">
+			 MESSAGE_STATUS = #messageStatus#
+			</isNotEmpty>
+			<isEqual prepend="AND" property="isNew" compareValue="true">
+			 DONE_YN = 'N'
+			</isEqual>
+		</dynamic>
+    </select>
+    
+    <select id="selectNewNotifyMessageCount" parameterClass="notifySearchModel" resultClass="int">
+    	SELECT count(*)
+		FROM ESB_NOTIFY_MESSAGE
+		WHERE DONE_YN = 'N'
+    </select>
+	
+</sqlMap>

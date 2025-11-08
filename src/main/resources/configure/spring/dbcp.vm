@@ -1,0 +1,24 @@
+<beans>
+#foreach( $dbcp in $data )
+	<bean id="$dbcp.id" class="$dbcp.classs">
+		<description><![CDATA[$dbcp.description]]></description>
+		<property name="url" value="$dbcp.url" />
+		<property name="driverClassName" value="$dbcp.driverClassName" />
+		<property name="username" value="$dbcp.username" />
+		<property name="password" value="$dbcp.password" />
+		<property name="defaultAutoCommit" value="$dbcp.defaultAutoCommit" />
+		<property name="maxWait" value="$dbcp.maxWait" />
+		<property name="initialSize" value="$dbcp.initialSize" />
+		<property name="maxActive" value="$dbcp.maxActive" />
+		<property name="minIdle" value="$dbcp.minIdle" />
+		<property name="maxIdle" value="$dbcp.maxIdle" />
+		<property name="validationQuery" value="$dbcp.validationQuery" />
+		<property name="testOnBorrow" value="$dbcp.testOnBorrow" />
+		<property name="testOnReturn" value="$dbcp.testOnReturn" />
+		<property name="testWhileIdle" value="$dbcp.testWhileIdle" />
+		<property name="timeBetweenEvictionRunsMillis" value="$dbcp.timeBetweenEvictionRunsMillis" />
+		<property name="minEvictableIdleTimeMillis" value="$dbcp.minEvictableIdleTimeMillis" />
+		<property name="numTestsPerEvictionRun" value="$dbcp.numTestsPerEvictionRun" />
+	</bean>
+#end
+</beans>

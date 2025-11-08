@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd 
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd			
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd">
+	
+	<bean id="iservice_pub" class="com.indigo.web.common.JmsUtil">
+		<property name="jmsTemplate" ref="jmsTemplate"></property>
+	</bean>
+
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory" ref="jmsConnectionFactory"></property>
+	</bean>
+
+	<bean id="imJmsListener" class="com.indigo.web.agent.communication.IMCommunicatorListener"></bean>
+
+	<bean id="listenerContainer"
+		class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="connectionFactory" ref="jmsConnectionFactory" />
+		<property name="destinationName" value="IM_COMMUNICATION" />
+		<property name="concurrentConsumers" value="1" />
+		<property name="messageListener" ref="imJmsListener" />
+		<property name="messageSelector"
+			value="target = 'IMC' AND destinationId = 'IMC_LIB_BATCH_UPDATE'" />
+	</bean>
+
+	<bean id="listenerContainer2"
+		class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="connectionFactory" ref="jmsConnectionFactory" />
+		<property name="destinationName" value="IM_HEARTBEAT" />
+		<property name="concurrentConsumers" value="1" />
+		<property name="messageListener" ref="imJmsListener" />
+	</bean>
+
+	<bean id="jmsConnectionFactory" class="com.indigo.indigomq.pool.PooledConnectionFactory"
+		destroy-method="stop" >
+		<property name="connectionFactory">
+			<bean class="com.indigo.indigomq.IndigoMQConnectionFactory" >
+				<property name="brokerURL">
+					<value>${brokerURL}</value>
+				</property>
+			</bean>
+
+		</property>
+		<property name="maxConnections" value="1"></property>
+	</bean>
+	
+	<bean class="com.indigo.web.common.ApplicationContextHolder" />
+</beans>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+        PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+        "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="db_select_condition">
+
+    <typeAlias alias="dbSelectCondition" type="com.indigo.web.dbselect.condition.DbSelectConditionVO"/>
+
+    <resultMap id="dbSelectConditionResult" class="dbSelectCondition">
+        <result property="interfaceId" column="INTERFACE_ID"/>
+        <result property="columnName" column="COLUMN_NAME"/>
+        <result property="operator" column="OPERATOR"/>
+        <result property="value" column="VALUE"/>
+        <result property="updateValue" column="UPDATE_VALUE"/>
+        <result property="used" column="USED"/>
+    </resultMap>
+
+    <select id="selectDbSelectConditionByInterfaceId" parameterClass="string" resultMap="dbSelectConditionResult">
+        SELECT *
+        FROM INTERFACE_CONDITION
+        WHERE INTERFACE_ID = #interfaceId#
+    </select>
+
+    <update id="updateDbSelectCondition" parameterClass="dbSelectCondition">
+        UPDATE INTERFACE_CONDITION
+        SET VALUE = #value#, OPERATOR = #operator#, UPDATE_VALUE = #updateValue#, USED = #used#
+        WHERE INTERFACE_ID = #interfaceId#
+        AND COLUMN_NAME = #columnName#
+    </update>
+
+    <delete id="deleteDbSelectCondition" parameterClass="dbSelectCondition">
+        DELETE FROM INTERFACE_CONDITION
+        WHERE INTERFACE_ID = #interfaceId#
+        AND COLUMN_NAME = #columnName#
+    </delete>
+
+    <insert id="insertDbSelectCondition" parameterClass="dbSelectCondition">
+        INSERT INTO INTERFACE_CONDITION (INTERFACE_ID, COLUMN_NAME, OPERATOR, VALUE, UPDATE_VALUE, USED)
+        VALUES (#interfaceId#, #columnName#, #operator#, #value#, #updateValue#, #used#)
+    </insert>
+</sqlMap>

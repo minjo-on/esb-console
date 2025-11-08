@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="userIfMappInfo">
+	
+	<update id="clearUserIfMappInfo" parameterClass="string">
+		DELETE FROM USER_IF_MAPP_INFO
+		WHERE IF_ID = #if_id#
+	</update>
+	
+	<update id="clearUserIfMappInfoByUsername" parameterClass="string">
+		DELETE FROM	USER_IF_MAPP_INFO
+		WHERE USER_ID = #user_id#
+	</update>
+	
+	<update id="insertUserIfMappInfo" parameterClass="java.util.HashMap">
+		INSERT INTO USER_IF_MAPP_INFO(MAPP_ID, IF_ID, USER_ID) VALUES(#MAPP_ID:VARCHAR#,#IF_ID:VARCHAR#,#USER_ID:VARCHAR#)
+	</update>
+	
+	<select id="getUserIfMappInfo" parameterClass="string" resultClass="string">
+		SELECT USER_ID FROM USER_IF_MAPP_INFO WHERE IF_ID=#IF_ID:VARCHAR#
+	</select>
+	
+	<select id="getInterfaceListByGroupId" parameterClass="java.util.HashMap" resultClass="java.util.HashMap">
+		SELECT IF_ID FROM USER_IF_MAPP_INFO
+		WHERE 1=1
+		<dynamic prepend="AND">
+			<isNotNull property="user_id">
+				USER_ID IN
+				<iterate property="USER_GROUP_LIST" open="(" close=")" conjunction=",">
+					#USER_GROUP_LIST[]#
+				</iterate>
+			</isNotNull>
+		</dynamic>
+		<dynamic prepend="AND">
+				<isNotNull property="if_query">
+					IF_ID LIKE '%' || #if_query# || '%'
+				</isNotNull>
+		</dynamic>
+		<![CDATA[
+		AND ROWNUM > #SKIP_INDEX#
+		AND ROWNUM <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+	
+	<select id="getInterfaceCountByGroupId" parameterClass="java.util.HashMap" resultClass="int">
+		SELECT COUNT(*) FROM USER_IF_MAPP_INFO
+		WHERE 1=1
+		<dynamic prepend="AND">
+			<isNotNull property="user_id">
+				USER_ID IN
+				<iterate property="USER_GROUP_LIST" open="(" close=")" conjunction=",">
+					#USER_GROUP_LIST[]#
+				</iterate>
+			</isNotNull>
+		</dynamic>
+		<dynamic prepend="AND">
+				<isNotNull property="if_query">
+					IF_ID LIKE '%' || #if_query# || '%'
+				</isNotNull>
+		</dynamic>
+		<![CDATA[
+			AND ROWNUM > #SKIP_INDEX#
+			AND ROWNUM <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+	</select>
+</sqlMap>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="modeler">
+	<typeAlias alias="modelerProject" type="com.indigo.web.visualization.modeler.vo.IndigoModelerProjectVo"/>
+	
+	<parameterMap id="modelerProjectPm" class="modelerProject">
+	    <parameter  property="PROJECTNAME"  jdbcType="VARCHAR" javaType="java.lang.String"/>
+	    <parameter  property="JSONTEXT" jdbcType="BLOB" javaType="java.lang.String"/>
+	    <parameter  property="INFO" jdbcType="VARCHAR" javaType="java.lang.String"/>
+	    <parameter  property="USERID" jdbcType="VARCHAR" javaType="java.lang.String"/>
+ 	 </parameterMap>
+
+	<resultMap id="modelerProjectRm" class="modelerProject">
+		<result column="PROJECTID" property="PROJECTID" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="PROJECTNAME" property="PROJECTNAME" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="JSONTEXT" property="JSONTEXT" jdbcType="BLOB" javaType="java.lang.String" typeHandler="com.indigo.esb.dao.blob.IndigoBlobStringZipTypeHandler" /><!-- javaType="[B" typeHandler="myblob" -->
+		<result column="INFO" property="INFO" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="USERID" property="USERID" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="TIMESTAMP" property="TIMESTAMP" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="FD_ID" property="FD_ID" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="PROJECTALIAS" property="PROJECTALIAS" jdbcType="VARCHAR" javaType="java.lang.String" />
+	</resultMap>
+	
+	<resultMap id="viewInfo2dbVo" class="modelerProject">
+		<result column="PROJECTNAME" property="PROJECTNAME" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="INFO" property="INFO" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="USERID" property="USERID" jdbcType="VARCHAR" javaType="java.lang.String" />
+		<result column="TIMESTAMP" property="TIMESTAMP" jdbcType="VARCHAR" javaType="java.lang.String" />
+	</resultMap>
+
+  
+  <insert id="insertIndigoModelerProject" parameterClass="modelerProject">
+  	INSERT INTO INDIGO_MODELERPROJECT(PROJECTID,PROJECTNAME,JSONTEXT,INFO,USERID,TIMESTAMP, FD_ID, PROJECTALIAS) 
+  	VALUES(NEXT VALUE FOR INDIGO_MODELERPROJECT_SEQUENCE, #PROJECTNAME:VARCHAR#,#JSONTEXT:BLOB#, #INFO:VARCHAR#, #USERID:VARCHAR#, CURRENT_TIMESTAMP, #FD_ID#, #PROJECTALIAS:VARCHAR#)
+  	
+  	<!-- INDIGO_MODELERPROJECT_SEQUENCE.NEXTVAL SYSTIMESTAMP-->
+  </insert>
+  
+  <update id="updateIndigoModelerProject" parameterClass="modelerProject">
+  	UPDATE INDIGO_MODELERPROJECT 
+    	SET JSONTEXT = #JSONTEXT:BLOB#,
+        	INFO = #INFO:VARCHAR#,
+            USERID = #USERID:VARCHAR#,
+            TIMESTAMP = CURRENT_TIMESTAMP,
+            FD_ID = #FD_ID#,
+            PROJECTALIAS = #PROJECTALIAS:VARCHAR#
+    WHERE PROJECTNAME =  #PROJECTNAME:VARCHAR#
+  </update>
+  
+  <select id="selectIndigoModelerProjectId" parameterClass="string" resultClass="string">
+  		SELECT PROJECTID FROM INDIGO_MODELERPROJECT WHERE PROJECTNAME =#VALUE#
+  </select>
+
+  <select id="selectIndigoModelerProjectAlias" resultClass="java.util.HashMap">
+        SELECT PROJECTNAME, PROJECTALIAS FROM INDIGO_MODELERPROJECT
+  </select>
+  
+  <select id="selectIndigoModelerProjectList" resultMap="modelerProjectRm">
+  		SELECT PROJECTID, PROJECTNAME, INFO, USERID, TIMESTAMP, JSONTEXT, FD_ID, PROJECTALIAS FROM INDIGO_MODELERPROJECT
+  		ORDER BY TIMESTAMP DESC
+  		<!-- TO_CHAR(TIMESTAMP,'YYYY-MM-DD HH24:MI:SS') AS  -->
+  </select>
+  
+  <select id="selectIndigoModelerProject" resultMap="modelerProjectRm" parameterClass="string">
+  		SELECT PROJECTID, PROJECTNAME, INFO, USERID, TIMESTAMP, JSONTEXT, FD_ID, PROJECTALIAS FROM INDIGO_MODELERPROJECT
+  		where PROJECTNAME =#VALUE#
+  		<!-- TO_CHAR(TIMESTAMP,'YYYY-MM-DD HH24:MI:SS') AS  -->
+  </select>
+  
+    <select id="viewInfo2db" resultMap="viewInfo2dbVo" parameterClass="string">
+  		SELECT PROJECTNAME, INFO, USERID, TIMESTAMP FROM INDIGO_MODELERPROJECT
+  		where PROJECTID =#VALUE#
+  </select>
+  
+  <delete id="deleteDb2File" parameterClass="java.util.HashMap">
+  DELETE FROM INDIGO_MODELERPROJECT
+  	   WHERE  PROJECTNAME IN(
+       		<iterate property="PRO_LIST" open="" close = "" conjunction=",">
+            	'$PRO_LIST[]$'				 
+            </iterate>)
+  </delete>
+</sqlMap>

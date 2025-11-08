@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<componentConfigure type="etc" usecomponentTag="true">
+	<component type="aop" alias="AOP" icon="Sort.png" tagName="aop">
+	</component>
+	<component type="sample" alias="Sampling" icon="Sort.png" tagName="sample">
+	</component>
+	<component type="stop" alias="Stop" icon="Sort.png" tagName="stop">
+	</component>
+	<component type="threads" alias="Thread" icon="Sort.png" tagName="threads">
+	</component>
+	<component type="validate" alias="Validate" icon="Sort.png" tagName="validate">
+	</component>
+</componentConfigure>

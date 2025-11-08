@@ -1,0 +1,14 @@
+<beans>
+#foreach( $jmstemplate in $data )
+	<bean id="$jmstemplate.jmsTemplateId" class="$jmstemplate.jmsTemplateClazz">
+        <description><![CDATA[$jmstemplate.description]]></description>
+        <property name="connectionFactory" ref="$jmstemplate.jtConnectionFactoryId"/>
+        <property name="deliveryMode" value="$jmstemplate.deliveryMode"/>
+        <property name="priority" value="$jmstemplate.priority"/>
+        <property name="timeToLive" value="$jmstemplate.timeToLive"/>
+        <property name="pubSubDomain" value="$jmstemplate.pubSubDomain"/>
+        <property name="explicitQosEnabled" value="$jmstemplate.explicitQosEnabled"/>
+        <property name="sessionTransacted" value="$jmstemplate.sessionTransacted"/>
+	</bean>
+#end
+</beans>

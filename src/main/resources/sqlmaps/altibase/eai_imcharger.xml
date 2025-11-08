@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_imcharger">
+
+<sql id="project_table">esb_IMCHARGER</sql>
+	<sql id="project_cols">
+	    CH_ID, CHARGER_NAME, CHARGER_DEPTH, CHARGER_GROUP, CHARGER_TELNUM, CHARGER_CELLNUM, GUBUN_USER, GUBUN_LIVE, REG_DATE, IM_ID
+	</sql>
+	
+	<typeAlias alias="chargerVO" type="com.indigo.web.mgmt.vo.IndigoChargerVO"/>
+	    <!-- 담당자list  -->
+	
+	<select id="getChargerInfoCnt" parameterClass="map" resultClass="Integer">
+		select count(*) from (select
+			CH_ID,
+			CHARGER_NAME,
+			CHARGER_DEPTH,
+			CHARGER_GROUP,
+			CHARGER_TELNUM,
+			CHARGER_CELLNUM,
+			GUBUN_USER,
+			GUBUN_LIVE,
+			REG_DATE,
+			IM_ID			
+		from
+			esb_IMCHARGER EI
+			
+	    where 
+		    CHARGER_NAME LIKE  '%' || #CH_NAME# || '%'	
+		
+         
+         
+        )
+        
+	</select>
+	
+	<select id="getIndiListInfoCnt" parameterClass="map" resultClass="Integer">
+	
+		select count(*)
+		from   
+		        esb_PRODUCT PD, 
+		        esb_IMCHARGER IM 
+		where
+		        
+        		pd.pd_id LIKE '%' || im.IM_ID || '%' 
+        		AND  PD.PD_alias LIKE  '%' ||  #IM_NAME#  || '%' 
+	</select>
+	
+	
+	
+	<select id="getChargerInfo" parameterClass="map" resultClass="chargerVO">
+		SELECT * FROM (select z.*, ROWNUM AS ROW_NUM from (select
+			CH_ID,
+			CHARGER_NAME,
+			CHARGER_DEPTH,
+			CHARGER_GROUP,
+			CHARGER_TELNUM,
+			CHARGER_CELLNUM,
+			GUBUN_USER,
+			GUBUN_LIVE,
+			REG_DATE,
+			IM_ID			
+		from
+			esb_IMCHARGER EI
+			
+	    where 
+		    CHARGER_NAME LIKE  '%' || #CH_NAME# || '%'	
+		
+         
+         
+         )z)
+        <![CDATA[
+           WHERE  ROW_NUM > #SKIP_INDEX#
+			AND    ROW_NUM <= #SKIP_INDEX# + #MAX_ROW# 
+			]]>
+	</select>
+	
+	<select id="getChargerInfoImId" parameterClass="map" resultClass="chargerVO">
+		SELECT * FROM (select z.*, ROWNUM AS ROW_NUM from (select
+			CH_ID,
+			CHARGER_NAME,
+			CHARGER_DEPTH,
+			CHARGER_GROUP,
+			CHARGER_TELNUM,
+			CHARGER_CELLNUM,
+			GUBUN_USER,
+			GUBUN_LIVE,
+			REG_DATE,
+			IM_ID			
+		from
+			esb_IMCHARGER EI
+			
+	    where 
+		    IM_ID LIKE  '%' || #IM_ID# || '%'	
+		
+         
+         
+         )z)
+        <![CDATA[
+           WHERE  ROW_NUM > #SKIP_INDEX#
+			AND    ROW_NUM <= #SKIP_INDEX# + #MAX_ROW# 
+			]]>
+	</select>
+	
+	
+	<select id="getChargerInfoImIdCnt" parameterClass="map" resultClass="Integer">
+		SELECT count(*) FROM (select z.*, ROWNUM AS ROW_NUM from (select
+			CH_ID,
+			CHARGER_NAME,
+			CHARGER_DEPTH,
+			CHARGER_GROUP,
+			CHARGER_TELNUM,
+			CHARGER_CELLNUM,
+			GUBUN_USER,
+			GUBUN_LIVE,
+			REG_DATE,
+			IM_ID			
+		from
+			esb_IMCHARGER EI
+			
+	    where 
+		    IM_ID LIKE  '%' || #IM_ID# || '%'	
+		
+         
+         
+         )z)
+       
+	</select>
+	
+	
+	
+	<select id="getIndiListInfo" parameterClass="map" resultClass="chargerVO">
+	
+		SELECT * FROM (select z.*, ROWNUM AS ROW_NUM from (select
+		    CH_ID,
+		    CHARGER_NAME,
+		    CHARGER_DEPTH,
+		    CHARGER_GROUP,
+		    CHARGER_TELNUM,
+		    CHARGER_CELLNUM,
+		    GUBUN_USER,
+		    GUBUN_LIVE,
+		    REG_DATE,
+		    IM_ID		    
+		from
+		    esb_IMCHARGER
+		where 
+		     IM_ID LIKE  '%' || #PD_ID#  || '%'
+           
+            )z)
+           <![CDATA[
+           WHERE  ROW_NUM > #SKIP_INDEX#
+			AND    ROW_NUM <= #SKIP_INDEX# + #MAX_ROW#
+	]]>
+	</select>
+
+		<!-- IM List -->
+	 <select id="getIManagerList" parameterClass="String" resultClass="com.indigo.web.agent.vo.EaiIManagerVO">
+		select
+		       IM.IM_ID,
+		       IM.IM_IP,
+		       IM.IM_PORT,
+		       IM.IM_OS,
+		       IM.IM_VER,
+		       PD.PD_NAME,
+		       PD.PD_ALIAS,
+		       PD.PD_GROUP_ID,
+		       PD.PD_REG_DATE
+		from   
+		        esb_PRODUCT PD, 
+		        esb_IMANAGER IM 
+		where
+		        PD.PD_ID = IM.IM_ID
+        		<isParameterPresent>
+        		AND IM.IM_ID = #IM_NAME#
+        		</isParameterPresent> 
+        order by 
+        		PD.PD_GROUP_ID,PD.PD_ALIAS,PD.PD_ORDER
+    </select>
+    
+    <select id="getIManagerDetail" resultClass="com.indigo.web.agent.vo.EaiIManagerVO">
+    	
+    </select>
+    
+    <insert id="insertCharger" parameterClass="chargerVO">
+        insert into esb_IMCHARGER
+            (CH_ID,CHARGER_NAME,CHARGER_DEPTH,CHARGER_GROUP,CHARGER_TELNUM,CHARGER_CELLNUM,
+			GUBUN_USER,GUBUN_LIVE,REG_DATE,IM_ID )
+        values
+            (CHARGER.nextval, #CHARGER_NAME#, #CHARGER_DEPTH#, #CHARGER_GROUP#, 
+            #CHARGER_TELNUM#, #CHARGER_CELLNUM#,#GUBUN_USER#,#GUBUN_LIVE#,#REG_DATE#,#IM_ID#)
+    </insert>
+    
+    <update id="updateCharger">
+	    update 
+	    	esb_IMCHARGER
+		set 
+		    CHARGER_NAME = #CHARGER_NAME#,
+		    CHARGER_DEPTH = #CHARGER_DEPTH#,
+		    CHARGER_GROUP = #CHARGER_GROUP#,
+		    CHARGER_TELNUM = #CHARGER_TELNUM#,
+		    CHARGER_CELLNUM = #CHARGER_CELLNUM#,
+		    GUBUN_USER = #GUBUN_USER#,
+		    GUBUN_LIVE = #GUBUN_LIVE#,
+		    REG_DATE = #REG_DATE#,
+		    IM_ID = #IM_ID#
+		where
+	    	CH_ID = #CH_ID#
+    </update>
+    
+    <delete id="deleteChager" parameterClass="string">
+    	delete from esb_IMCHARGER
+    	where CH_ID = #value#
+    </delete>
+    
+	<select id="getImIdList" parameterClass="String" resultClass="com.indigo.web.agent.vo.EaiIManagerVO">
+           SELECT * FROM (SELECT * FROM esb_PRODUCT 
+           WHERE PD_TYPE = 'IM' ) WHERE PD_NAME  LIKE  '%' || #value#  || '%' OR PD_ALIAS  LIKE  '%' || #value#  || '%' 
+	
+	</select>
+
+    
+</sqlMap>

@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_interface">
+	<cacheModel id="cachemodel.masterCache" type="LRU" readOnly="true" serialize="false">
+	    <!-- <property name="cache-size" value="10" /> --> 
+	    <flushOnExecute statement="eai_interface.inserteRouteInfo"/>
+	    <flushOnExecute statement="eai_interface.updateRouteInfo"/>
+	    <flushOnExecute statement="eai_interface.deleteRouteInfo"/>
+	</cacheModel>
+	
+	<cacheModel id="cachemodel.destCache" type="LRU" readOnly="true" serialize="false">
+	    <!-- <property name="cache-size" value="10" /> --> 
+	    <flushOnExecute statement="eai_interface.insertDestInfo"/>
+	    <flushOnExecute statement="eai_interface.clearDestInfo"/>
+	</cacheModel>
+	<typeAlias alias="routeVo" type="com.indigo.web.agent.vo.RouteInfoVO" />
+	<typeAlias alias="destVo" type="com.indigo.web.agent.vo.RouteDestInfoVo" />
+	<typeAlias alias="code_clss" type="com.indigo.web.mgmt.vo.IndigoCodeVO"/>
+	
+	<!-- TO_CHAR(TO_DATE(SUBSTR( REG_DATE, 1, 14),'yyyymmddhh24miss'),'yyyy-mm-dd hh24:mi:ss') AS CHANGE_DATE, -->
+			
+	<!-- <select id="getRouteInfo" parameterClass="map" resultClass="routeVo">
+		SELECT T1.* FROM(
+		SELECT ROWNUM row_num,A.*
+		FROM(
+		SELECT 
+			IF_ID,
+			IF_NAME,
+			IF_TYPE,
+			SYSTEM_ID AS snd_system_id,
+			SYSTEM_NAME AS snd_system_name,
+			ROUTE_SEND_Q AS data_arr_queue,
+			TARGET_LISTEN_Q AS data_dest_queue,
+			ROUTE_RESULT_Q AS result_arr_queue,
+			SOURCE_LISTEN_Q AS result_dest_queue,
+			DESCRIPTION,
+			REG_DATE AS CHANGE_DATE,
+			USE_YN 
+		FROM ESB_TEMP_IF_MASTER
+		<dynamic prepend="where">
+		<isNotEmpty property="IF_ID" prepend="and">
+			IF_ID = #IF_ID#
+		</isNotEmpty>
+        <isNotEmpty property="IF_ID" prepend="and">
+            IF_ID LIKE '%' || #IF_ID# || '%'
+        </isNotEmpty>
+		</dynamic>
+		ORDER BY REG_DATE DESC
+		) A
+		) T1
+		<isNotNull property="SKIP_INDEX">
+		<![CDATA[
+				WHERE  row_num > #SKIP_INDEX#
+				AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+		</isNotNull>
+	</select> -->
+
+	<select id="getRouteInfo" parameterClass="map" resultClass="routeVo">
+		SELECT distinct T1.if_id, t1.if_name, t1.if_type, t1.snd_system_id, t1.snd_system_name, t1.data_arr_queue, t1.data_dest_queue,
+t1.result_arr_queue, t1.result_dest_queue, t1.description, t1.change_date, t1.use_yn, t1.interfacetable 
+		FROM(
+		SELECT ROWNUM row_num,A.*
+		FROM(
+		SELECT 
+			M.IF_ID,
+			M.IF_NAME,
+			M.IF_TYPE,
+			M.SYSTEM_ID AS snd_system_id,
+			M.SYSTEM_NAME AS snd_system_name,
+			M.ROUTE_SEND_Q AS data_arr_queue,
+			M.TARGET_LISTEN_Q AS data_dest_queue,
+			M.ROUTE_RESULT_Q AS result_arr_queue,
+			M.SOURCE_LISTEN_Q AS result_dest_queue,
+			M.DESCRIPTION,
+			M.REG_DATE AS CHANGE_DATE,
+			M.USE_YN,
+      I.SOURCE_TABLE AS INTERFACETABLE
+		FROM ESB_TEMP_IF_MASTER M LEFT OUTER JOIN ESB_IF_TABLE I ON M.IF_ID = I.IF_ID
+		<dynamic prepend="where">
+        <isNotEmpty property="IF_ID" prepend="and">
+            M.IF_ID LIKE '%' || #IF_ID# || '%'
+        </isNotEmpty>
+		</dynamic>
+		ORDER BY M.REG_DATE DESC
+		) A
+		) T1
+		<isNotNull property="SKIP_INDEX">
+		<![CDATA[
+				WHERE  row_num > #SKIP_INDEX#
+				AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+		]]>
+		</isNotNull>
+	</select>
+	
+	<!-- <isNotEmpty property="DEST_ID" prepend="and">
+			DEST_ID = #DEST_ID#
+		</isNotEmpty>		
+		search 
+		<isNotEmpty property="IF_ID" prepend="and">
+			IF_ID LIKE '%' || #IF_ID# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="DEST_ID" prepend="and">
+			DEST_ID LIKE '%' || #DEST_ID# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="DATA_DEST_QUEUE" prepend="and">
+			DATA_DEST_QUEUE LIKE '%' || #DATA_DEST_QUEUE# || '%'
+		</isNotEmpty>
+		<isNotEmpty property="RESULT_DEST_QUEUE" prepend="and">
+			RESULT_DEST_QUEUE LIKE '%' || #RESULT_DEST_QUEUE# || '%'
+		</isNotEmpty> -->
+
+	<select id="getInterfaceIdCount" parameterClass="String"
+		resultClass="Integer">
+		SELECT COUNT(*) FROM ESB_TEMP_IF_MASTER
+		WHERE IF_ID = #if_id#
+	</select>
+	
+	<select id="getResultDestQueueName" parameterClass="String"
+		resultClass="String">
+			SELECT TARGET_LISTEN_Q AS RESULT_DEST_QUEUE FROM ESB_TEMP_IF_MASTER 
+			WHERE IF_ID = #if_id#
+			AND ROWNUM = 1
+	</select>
+
+
+	<insert id="inserteRouteInfo" parameterClass="map">
+		INSERT INTO ESB_TEMP_IF_MASTER(
+		IF_ID,
+		IF_NAME,
+		IF_TYPE,
+		SYSTEM_ID,
+		SYSTEM_NAME,
+		ROUTE_SEND_Q,
+		TARGET_LISTEN_Q,
+		ROUTE_RESULT_Q,
+		SOURCE_LISTEN_Q,
+		DESCRIPTION,
+		REG_DATE,
+		MOD_DATE,
+		USE_YN
+		)
+		VALUES(
+		upper(#IF_ID#),
+		#IF_NAME#,
+		#IF_TYPE#,
+		#SYSTEM_ID#,
+		#SYSTEM_NAME#,
+		#ROUTE_SEND_Q#,
+		#TARGET_LISTEN_Q#,
+		#ROUTE_RESULT_Q#,
+		#SOURCE_LISTEN_Q#,
+		#DESCRIPTION#,
+		TO_CHAR(SYSDATE, 'yyyymmddhh24miss'),
+		TO_CHAR(SYSDATE, 'yyyymmddhh24miss'),
+		#USE_YN#
+		)
+	</insert>
+	
+	<update id="updateRouteInfo" parameterClass="map">
+	   UPDATE
+     		 ESB_TEMP_IF_MASTER
+  	  SET
+		IF_NAME = #IF_NAME#,
+		IF_TYPE = #IF_TYPE#,
+		SYSTEM_ID = #SYSTEM_ID#,
+		SYSTEM_NAME = #SYSTEM_NAME#,
+		ROUTE_SEND_Q = #ROUTE_SEND_Q#,
+		TARGET_LISTEN_Q = #TARGET_LISTEN_Q#,
+		ROUTE_RESULT_Q = #ROUTE_RESULT_Q#,
+		SOURCE_LISTEN_Q = #SOURCE_LISTEN_Q#,
+		DESCRIPTION = #DESCRIPTION#,
+		REG_DATE = TO_CHAR(SYSDATE, 'yyyymmddhh24miss'),
+		MOD_DATE = TO_CHAR(SYSDATE, 'yyyymmddhh24miss'),
+		USE_YN = #USE_YN#
+   WHERE
+      IF_ID =  upper(#IF_ID#)
+  </update>
+  
+  	<insert id="insertDestInfo" parameterClass="map">
+		INSERT INTO ESB_TEMP_IF_DEST(
+		IF_ID,
+		DEST_ID,
+		IF_TYPE,
+		SYSTEM_ID,
+		SYSTEM_NAME,
+		DESCRIPTION,
+		REG_DATE,
+		MOD_DATE
+		)
+		VALUES(
+		upper(#IF_ID#),
+		#DEST_ID#,
+		#IF_TYPE#,
+		#SYSTEM_ID#,
+		#SYSTEM_NAME#,
+		#DESCRIPTION#,
+		TO_CHAR(SYSDATE, 'yyyymmddhh24miss'),
+		TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+		)
+	</insert>
+  
+	<update id="deleteRouteInfo" parameterClass="map">
+	  DELETE FROM ESB_TEMP_IF_MASTER WHERE
+      	IF_ID =  upper(#IF_ID#)
+    </update>
+	
+  	<update id="clearUserIfMappInfo" parameterClass="String">
+		DELETE FROM USER_IF_MAPP_INFO
+		WHERE IF_ID = #if_id#
+	</update>
+	
+	<update id="clearUserIfMappInfoByUsername" parameterClass="String">
+		DELETE FROM	USER_IF_MAPP_INFO
+		WHERE USER_ID = #user_id#
+	</update>
+	  
+	<update id="clearDestInfo" parameterClass="map">
+	    DELETE FROM ESB_TEMP_IF_DEST WHERE
+      	IF_ID =  upper(#IF_ID#)
+	</update>
+	
+ 	<update id="insertUserIfMappInfo" parameterClass="map">
+		INSERT INTO USER_IF_MAPP_INFO(MAPP_ID, IF_ID, USER_ID) VALUES(#MAPP_ID:VARCHAR#,#IF_ID:VARCHAR#,#USER_ID:VARCHAR#)
+	</update>
+	
+	<select id="getUserIfMappInfo" parameterClass="String" resultClass="String">
+		SELECT USER_ID FROM USER_IF_MAPP_INFO WHERE IF_ID=#IF_ID:VARCHAR#
+	</select>
+	
+	<select id="getDestInfoByIfId" parameterClass="String" resultClass="destVo">
+		SELECT IF_ID, DEST_ID, IF_TYPE, SYSTEM_ID, SYSTEM_NAME, DESCRIPTION, REG_DATE FROM ESB_TEMP_IF_DEST WHERE IF_ID=#IF_ID:VARCHAR#
+	</select>
+	
+
+	<select id="getInterfaceListByUserId" parameterClass="map" resultClass="code_clss">
+		SELECT  A.IF_ID AS CODE_ID,
+				A.CODE_DIV,
+				A.USE_YN AS USE_YN,
+				A.CODE_NAME AS CODE_NAME,
+				A.ROW_NUM
+		FROM (
+			SELECT DISTINCT RT.IF_ID,
+				   '01' AS CODE_DIV,
+				   'Y' AS USE_YN,
+				   NVL((SELECT IF_NAME FROM ESB_TEMP_IF_MASTER WHERE IF_ID = RT.IF_ID), RT.IF_ID) AS CODE_NAME,
+				   ROWNUM AS ROW_NUM
+			FROM ESB_TEMP_IF_MASTER RT 
+				LEFT OUTER JOIN INDIGO_CODE CD ON RT.IF_ID = CD.CODE_ID
+				LEFT OUTER JOIN USER_IF_MAPP_INFO MAPP ON RT.IF_ID = MAPP.IF_ID
+			<dynamic>
+				<isNotNull property="user_id">
+				INNER JOIN INDIGO_GROUP_MAPPING C ON MAPP.USER_ID = C.GROUP_ID
+				</isNotNull>
+			</dynamic>
+			WHERE 1=1
+		<dynamic prepend="AND">
+			<isNotNull property="user_id">
+				C.USER_ID = #user_id:VARCHAR:NO_ENTRY#
+			</isNotNull>
+		</dynamic>
+		<dynamic prepend="AND">
+				<isNotNull property="if_query">
+					RT.IF_ID LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%' OR RT.IF_NAME LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%' 
+				</isNotNull>
+		</dynamic>
+			AND ROWNUM <![CDATA[>=]]> #SKIP_INDEX# AND ROWNUM <![CDATA[<]]> #SKIP_INDEX# + #MAX_ROW#
+		) A
+	</select>
+	
+	<select id="getTotalInterfaceCountByUserId" parameterClass="map" resultClass="string">
+		SELECT COUNT(A.IF_ID) AS CNT FROM (
+			SELECT DISTINCT RT.IF_ID FROM ESB_TEMP_IF_MASTER RT
+				LEFT OUTER JOIN USER_IF_MAPP_INFO MAPP ON RT.IF_ID = MAPP.IF_ID
+			WHERE 1=1
+			<dynamic prepend="AND">
+				<isNotNull property="user_id">
+					MAPP.USER_ID = #user_id:VARCHAR:NO_ENTRY#
+				</isNotNull>
+			</dynamic>
+			<dynamic prepend="AND">
+				<isNotNull property="if_query">
+					RT.IF_ID LIKE '%' || #if_query:VARCHAR:NO_ENTRY# || '%'
+				</isNotNull>
+			</dynamic>
+		) A
+	</select>
+	
+	<select id="getTotalInterfaceCountByIfId" parameterClass="map" resultClass="string">
+		SELECT COUNT(A.IF_ID) AS CNT FROM (
+			SELECT DISTINCT RT.IF_ID FROM ESB_TEMP_IF_MASTER RT
+				LEFT OUTER JOIN USER_IF_MAPP_INFO MAPP ON RT.IF_ID = MAPP.IF_ID
+			WHERE 1=1
+			<dynamic prepend="AND">
+				<isNotEmpty property="ifId">
+					RT.IF_ID LIKE '%' || #ifId# || '%'
+				</isNotEmpty>
+			</dynamic>
+		) A
+	</select>
+	
+	<select id="getTemplateSndCd" resultClass="java.util.HashMap" cacheModel="cachemodel.masterCache">
+		SELECT DISTINCT SYSTEM_ID, SYSTEM_NAME FROM ESB_TEMP_IF_MASTER ORDER BY SYSTEM_NAME ASC
+	</select>
+	
+	<select id="getTemplateRcvCd" resultClass="java.util.HashMap" cacheModel="cachemodel.destCache">
+		SELECT DISTINCT SYSTEM_ID, SYSTEM_NAME FROM ESB_TEMP_IF_DEST ORDER BY SYSTEM_NAME ASC
+	</select>
+</sqlMap>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="notice">
+
+	<insert id="insertNoticeConts" parameterClass="map">
+        INSERT INTO ESB_NOTICE(ID, CONTS, REG_DATE)
+	  	VALUES(NVL((SELECT MAX(ID) FROM ESB_NOTICE),0) + 1,#CONTS#,TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS') || '000')
+    </insert>
+
+	<update id="updateNoticeConts" parameterClass="map">
+        UPDATE ESB_NOTICE 
+        SET CONTS=#CONTS#, REG_DATE=TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS') || '000'
+        WHERE ID = #ID#
+    </update>
+
+	<select id="selectNoticeConts" parameterClass="map" resultClass="java.util.HashMap">
+        SELECT ID, CONTS, REG_DATE
+        FROM ESB_NOTICE
+	  	<![CDATA[
+			where  ROWNUM > #start#
+			AND  ROWNUM <= #start# + #limit#
+		]]>
+	  	ORDER BY ID DESC
+    </select>
+
+	<delete id="deleteNoticeConts" parameterClass="map">
+        DELETE FROM ESB_NOTICE
+	  	WHERE ID = #ID#
+    </delete>
+    
+    <select id="viewNoticeDetail" parameterClass="string" resultClass="string">
+		SELECT CONTS FROM ESB_NOTICE WHERE ID = #id#
+	</select>	
+</sqlMap>

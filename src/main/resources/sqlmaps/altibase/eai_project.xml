@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap      
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="eai_project">
+
+	<typeAlias alias="project" type="com.indigo.web.agent.vo.EaiProjectVO"/>
+	<typeAlias alias="adaptor" type="com.indigo.web.agent.vo.EaitotVO"/>
+	
+	<sql id="project_table">esb_PROJECT</sql>
+	<sql id="group_mapping">INDIGO_GROUP_MAPPING</sql>
+	
+	<sql id="project_cols">
+	    PJ_ID, PJ_ORDER, PJ_NAME, PJ_REG_DATE, PJ_REG_USER, PJ_INFO, PJ_GROUP_ID , PJ_FAVORITE
+	</sql>
+	
+<!-- 	<cacheModel type="MEMORY" id="TreeCasheMEM">
+		<flushOnExecute statement="esb_project.insertProject"/>
+		<flushOnExecute statement="esb_project.updateFavorite"/>
+		<flushOnExecute statement="esb_project.deleteProject"/>
+		<flushOnExecute statement="esb_project.updateProject"/>
+		<flushInterval minutes="30"/>
+	</cacheModel> -->
+
+    <select id="getProjectList" parameterClass="string" resultClass="project">
+        select <include refid="project_cols" />
+        from   <include refid="project_table" />
+        <isParameterPresent>
+        where  PJ_ID = #value#
+        </isParameterPresent>
+        <isNotParameterPresent>
+        order by PJ_ORDER
+        </isNotParameterPresent>
+    </select>
+    
+    <select id="getProjectFavoriteList" parameterClass="java.util.Map" resultClass="project">
+        select <include refid="project_cols" />
+        from   <include refid="project_table" /> PJ
+        	   <isNotNull property="USER_ID">
+        	   	,<include refid="group_mapping" /> UMG
+        	   </isNotNull>
+        <dynamic prepend="where">
+	        <isNotNull property="USER_ID" prepend="and">
+	        	PJ.PJ_GROUP_ID = UMG.GROUP_ID
+        		AND UMG.USER_ID = #USER_ID#
+        	</isNotNull>
+        	<isNotNull property="GROUP_ID" prepend="and">
+        		PJ.PJ_GROUP_ID = #GROUP_ID#
+        	</isNotNull>
+	        <isNotNull property="FAVORITE" prepend="and">
+	       		PJ.pj_favorite = #FAVORITE#
+	        </isNotNull>
+	    </dynamic>
+        ORDER BY PJ_ORDER, PJ_NAME
+    </select>
+    
+    <select id="getPageProjectList" resultClass="project" parameterClass="java.util.Map">
+   		select t2.*
+			from(
+				select ROWNUM row_num, t1.*
+			    	from(
+				   		select <include refid="project_cols" />, 
+				   			nvl(ad_starting,0) ad_starting, 
+				   			nvl(ad_running,0) ad_running, 
+				   			nvl(ad_userstop,0) ad_userstop, 
+				   			nvl(ad_stop,0) ad_stop, 
+				   			nvl(ad_warring,0) ad_warring, 
+				   			nvl(ad_nosignal,0) ad_nosignal, 
+				   			nvl(ad_nostatus,0) ad_nostatus
+				        from   <include refid="project_table" /> PJ LEFT OUTER JOIN
+				        		(
+				        		 select pj.pj_id STATUS_ID
+								    , MAX(DECODE(ins.STATUS,'0',CNT,0)) ad_starting
+								    , MAX(DECODE(ins.STATUS,'1',CNT,0)) ad_running
+								    , MAX(DECODE(ins.STATUS,'-2',CNT,0)) ad_userstop
+								    , MAX(DECODE(ins.STATUS,'-1',CNT,0)) ad_stop
+								    , MAX(DECODE(ins.STATUS,'2',CNT,0)) ad_warring
+								    , MAX(DECODE(ins.STATUS,'-9',CNT,0)) ad_nosignal
+								    , MAX(DECODE(ins.STATUS,'null',CNT,0)) ad_nostatus
+								  from esb_project pj,
+									    (
+									    select STATUS, count(STATUS) CNT, pj_id 
+									    from esb_instance ins1, 
+									      (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+									                DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+									                  DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'null')))) STATUS, pd1.pd_id
+									        from esb_product pd1
+									      )pd
+									    where
+									       pd.pd_id = ins1.in_id
+								   		group by STATUS, ins1.pj_id
+								    	) ins
+								  where
+								    ins.pj_id = pj.pj_id
+								  group by pj.pj_id
+				        		) AD_STATUS
+				        		<isNotNull property="USER_ID">
+				        		,<include refid="group_mapping" /> UMG
+				        		</isNotNull>
+				        ON PJ.PJ_ID = AD_STATUS.STATUS_ID
+				        <dynamic prepend="where">
+				       		<isNotNull property="USER_ID" prepend="and">
+				       			PJ.PJ_GROUP_ID = UMG.GROUP_ID
+				        		AND UMG.USER_ID = #USER_ID#
+				        	</isNotNull>
+				        	<isNotNull property="GROUP_ID" prepend="and">
+							<iterate prepend="PJ.PJ_GROUP_ID IN" property="GROUP_ID" open="(" conjunction="," close=")">
+							 #GROUP_ID[]#
+							</iterate>
+							</isNotNull>
+				        	<!-- <isNotNull property="GROUP_ID" prepend="and">
+				        		PJ.PJ_GROUP_ID = #GROUP_ID#
+				        	</isNotNull> -->
+            				<isNotNull prepend="and" property="pj_name">
+            					PJ_NAME like '%' ||#pj_name#|| '%'
+            				</isNotNull>
+            				<isNotNull prepend="and" property="pj_reg_user">
+            					PJ_REG_USER like '%' ||#pj_reg_user#|| '%'
+            				</isNotNull>
+            			</dynamic>
+                )t1 
+			)t2
+		<![CDATA[
+			where  row_num > #SKIP_INDEX#
+			AND  row_num <= #SKIP_INDEX# + #MAX_ROW#
+			order by PJ_ORDER, PJ_NAME
+		]]>
+    </select>
+    
+    <select id="getPageProjectTot" resultClass="int" parameterClass="java.util.Map">
+		select count(*)
+	    from   <include refid="project_table" /> PJ
+	    	   <isNotNull property="USER_ID">
+				,<include refid="group_mapping" /> UMG
+			   </isNotNull>
+		<dynamic prepend="where">
+	   		<isNotNull property="USER_ID" prepend="and">
+	   			PJ.PJ_GROUP_ID = UMG.GROUP_ID
+        		AND UMG.USER_ID = #USER_ID#
+        	</isNotNull>
+        	<isNotNull property="GROUP_ID" prepend="and">
+			<iterate prepend="PJ.PJ_GROUP_ID IN" property="GROUP_ID" open="(" conjunction="," close=")">
+			 #GROUP_ID[]#
+			</iterate>
+			</isNotNull>
+        	<!-- <isNotNull property="GROUP_ID" prepend="and">
+        		PJ.PJ_GROUP_ID = #GROUP_ID#
+        	</isNotNull> -->
+			<isNotNull prepend="and" property="pj_name">
+            	PJ_NAME like '%' ||#pj_name#|| '%'
+            </isNotNull>
+            <isNotNull prepend="and" property="pj_reg_user">
+            	PJ_REG_USER like '%' ||#pj_reg_user#|| '%'
+            </isNotNull>
+        </dynamic>
+    </select>
+    
+    <insert id="insertProject" parameterClass="project">
+    	insert into <include refid="project_table" />
+    	(<include refid="project_cols" />)
+    	values
+    	(#pj_id#, #pj_order#, #pj_name#, #pj_reg_date#, #pj_reg_user#, #pj_info#,#pj_group_id#,'N')
+    </insert>
+    
+    <update id="updateProject" parameterClass="project">
+		update <include refid="project_table" />
+		set    PJ_ORDER    = #pj_order#     , 
+		       PJ_NAME     = #pj_name#      , 
+		       PJ_INFO     = #pj_info# 		,
+		       PJ_GROUP_ID = #pj_group_id#
+		where  PJ_ID = #pj_id#     
+    </update>
+    
+    <select id="validateProjectName" resultClass="project" parameterClass="string">
+    	SELECT *
+    	FROM <include refid="project_table" />
+    	WHERE PJ_NAME = #pj_name#
+    </select>
+    
+    <update id="updateFavorite" parameterClass="java.util.Map">
+    	update <include refid="project_table" />
+		set    pj_favorite    = #pj_favorite#
+		where  PJ_ID = #pj_id#  
+    </update>
+    
+    <delete id="deleteProject" parameterClass="string">
+        delete from <include refid="project_table" />
+        where  PJ_ID = #value#
+    </delete>
+    
+     <select id="getPageAdaptorList" resultClass="adaptor" parameterClass="java.util.Map">
+		select T2.*
+                from(
+                        select ROWNUM row_num, T1.* FROM        
+                                (
+                                        SELECT A.PD_ID, A.PD_TYPE, A.PD_NAME, A.PD_ALIAS, A.PD_REG_DATE , A.final_ds_status,
+                                           	   A.IN_IM_ID, A.FINAL_NW_STATUS, A.FINAL_MO_STATUS, A.FINAL_MO_REG_DATE, A.MO_ERROR_CNT,
+                                               B.PJ_ID, B.IN_DEPLOY_YN, B.IN_DEPLOY_DATE, B.IN_ID, C.PJ_NAME,
+                                               ( 
+                                               	SELECT B.PD_AlIAS 
+                                               	FROM esb_PRODUCT B 
+                                                WHERE B.PD_ID=A.IN_IM_ID
+                                               ) IM_ALIAS,
+                                  			   (
+                                                SELECT B.PD_NAME 
+                                                FROM esb_PRODUCT B 
+                                                WHERE B.PD_ID=A.IN_IM_ID
+                                               ) IM_NAME,
+                                               A.PD_STATUS,
+                                               C.PJ_GROUP_ID
+                                        FROM esb_INSTANCE B, esb_PROJECT C, 
+                                                        	(select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+										                              	DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+										                                    DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'null')))) PD_STATUS , pd1.*
+								                  			 from esb_PRODUCT pd1
+								                  			 order by PD_ORDER) A
+								        WHERE B.IN_ID=A.PD_ID AND B.PJ_ID=C.PJ_ID  
+				ORDER BY A.PD_STATUS ASC
+                                )T1     
+                                <isNotNull property="USER_ID">
+								 ,<include refid="group_mapping" /> UMG
+								</isNotNull>   
+                                        <dynamic prepend="where">
+                                        	<isNotNull property="USER_ID" prepend="and">
+                                        		PJ_GROUP_ID = UMG.GROUP_ID
+								        		AND USER_ID = #USER_ID#
+								        	</isNotNull>
+								        	<isNotNull property="GROUP_ID" prepend="and">
+								        		PJ_GROUP_ID = #GROUP_ID#
+								        	</isNotNull>
+                                            <isNotNull property="pd_name" prepend="and">
+                                            	PD_NAME like '%' ||#pd_name#|| '%'
+                                            </isNotNull>
+                                            <isNotNull property="pj_name" prepend="and">
+                                            	PJ_NAME like '%' ||#pj_name#|| '%'
+                                            </isNotNull>
+                                            <isNotNull property="im_name" prepend="and">
+                                            	IM_ALIAS like '%' ||#im_name#|| '%'
+                                            </isNotNull>
+                                            <isNotNull property="STATUS_VALUE" prepend="and">
+											 	T1.PD_STATUS = #STATUS_VALUE#
+											</isNotNull>
+                                        </dynamic>
+                        )T2 
+                        
+                         <![CDATA[
+           					WHERE  row_num > #SKIP_INDEX#
+							AND    row_num <= #SKIP_INDEX# + #MAX_ROW#
+						]]>
+    </select>
+
+	<select id="getPageAdaptorTot" resultClass="int" parameterClass="java.util.Map">
+
+		select count(T2.row_num) AS TOT_CNT
+		from(
+		select ROWNUM row_num, T1.* FROM
+		(
+			SELECT A.PD_ID, A.PD_TYPE, A.PD_NAME, A.PD_ALIAS,
+				A.IN_IM_ID, A.FINAL_NW_STATUS, A.FINAL_MO_STATUS, A.FINAL_MO_REG_DATE,
+				A.MO_ERROR_CNT,
+				B.PJ_ID, B.IN_DEPLOY_YN, B.IN_DEPLOY_DATE,
+				C.PJ_NAME,
+				(
+				SELECT B.PD_AlIAS
+				FROM esb_PRODUCT B
+				WHERE B.PD_ID=A.IN_IM_ID
+				) IM_ALIAS,
+				(
+				SELECT B.PD_NAME
+				FROM esb_PRODUCT B
+				WHERE B.PD_ID=A.IN_IM_ID
+				) IM_NAME,
+				A.PD_STATUS,
+				C.PJ_GROUP_ID
+	        FROM esb_INSTANCE B, esb_PROJECT C, 
+		            (select DECODE(SIGN(((sysdate - pd1.FINAL_MO_REG_DATE) * 24 * 60 * 60 * 1000) - (3 * 60 * 1000)),1,'-9', 
+								DECODE(pd1.FINAL_MO_STATUS,'-2','-2','-1','-1',
+									DECODE( pd1.FINAL_NW_STATUS,'99','2',nvl(pd1.FINAL_MO_STATUS,'null')))) PD_STATUS, pd1.*
+					 from esb_PRODUCT pd1) A
+			WHERE B.IN_ID=A.PD_ID AND B.PJ_ID=C.PJ_ID
+		)T1
+		<isNotNull property="USER_ID">
+		 ,<include refid="group_mapping" /> UMG
+		</isNotNull>
+		<dynamic prepend="where">
+			<isNotNull property="USER_ID" prepend="and">
+            	PJ_GROUP_ID = UMG.GROUP_ID
+				AND USER_ID = #USER_ID#
+			</isNotNull>
+			<isNotNull property="GROUP_ID" prepend="and">
+				PJ_GROUP_ID = #GROUP_ID#
+			</isNotNull>
+			<isNotNull property="pd_name" prepend="and">
+				PD_NAME like '%' ||#pd_name#|| '%'
+			</isNotNull>
+			<isNotNull property="pj_name" prepend="and">
+				PJ_NAME like '%' ||#pj_name#|| '%'
+			</isNotNull>
+			<isNotNull property="im_name" prepend="and">
+ 				IM_NAME like '%' ||#im_name#|| '%'
+			</isNotNull>
+			<isNotNull property="STATUS_VALUE" prepend="and">
+				T1.PD_STATUS = #STATUS_VALUE#
+			</isNotNull>
+		</dynamic>
+		)T2
+
+	</select>
+	
+	<select id ="getPjID" parameterClass="string" resultClass="string">
+		SELECT PJ_ID FROM esb_PROJECT WHERE PJ_NAME =#value# AND ROWNUM =1
+	</select>
+</sqlMap>

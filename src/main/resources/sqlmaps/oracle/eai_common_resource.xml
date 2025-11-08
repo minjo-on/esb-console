@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap
+    PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="commonResource">
+
+<select id="selectCmmResource" resultClass="HashMap" parameterClass="HashMap">
+		SELECT T2.*
+		FROM(SELECT ROWNUM ROW_NUM, T1.*
+		    	FROM(
+					SELECT r.RESOURCE_KEY, r.RESOURCE_ID, r.RESOURCE_TYPE,  r.RESOURCE_DATE, r.RESOURCE_ALIAS, r.RESOURCE_MEMO, r.RESOURCE_USER, COUNT(m.IN_ID) AS mappingDeploy 
+						FROM INDIGO_CMM_RESOURCE r, INDIGO_CMM_RESOURCE_MAPPING m, esb_INSTANCE i
+						WHERE r.RESOURCE_KEY = m.RESOURCE_KEY(+) 
+						  AND m.IN_ID = i.IN_ID(+)						        
+							<isNotNull property="SEARCH_INPUT" prepend="and">
+								(  r.RESOURCE_TYPE like '%' || #SEARCH_INPUT# || '%'
+								or r.RESOURCE_ID like '%' || #SEARCH_INPUT# || '%'
+								or r.RESOURCE_ALIAS like '%' || #SEARCH_INPUT# || '%'
+								<!-- or r.RESOURCE_MEMO like '%' || #SEARCH_INPUT# || '%'
+								or r.RESOURCE_KEY IN
+									(SELECT RESOURCE_KEY FROM INDIGO_CMM_RESOURCE_PROPERTY
+										WHERE RESOURCE_PROPERTY_VALUE like '%' || #SEARCH_INPUT# || '%') -->
+								)
+							</isNotNull>
+							<isNotNull property="RESOURCE_TYPE" prepend="and">
+								r.RESOURCE_TYPE = #RESOURCE_TYPE#
+							</isNotNull>
+							<isNotNull property="RESOURCE_KEY" prepend="and">
+								r.RESOURCE_KEY = #RESOURCE_KEY#
+							</isNotNull>
+						GROUP BY r.RESOURCE_KEY, r.RESOURCE_ID, r.RESOURCE_KEY, r.RESOURCE_TYPE,  r.RESOURCE_DATE, r.RESOURCE_ALIAS, r.RESOURCE_MEMO, r.RESOURCE_USER
+						ORDER BY R.RESOURCE_DATE DESC
+                         )T1
+				)T2
+		<isNotNull property="SKIP_INDEX" >
+		<![CDATA[
+			WHERE  ROW_NUM > #SKIP_INDEX#
+			AND  ROW_NUM <= #MAX_ROW#
+		]]>
+		</isNotNull>
+</select>
+
+<select id="selectCmmResourceCount" resultClass="int" parameterClass="HashMap">
+	SELECT COUNT(RESOURCE_KEY) FROM INDIGO_CMM_RESOURCE
+		<dynamic prepend="where">								        
+			<isNotNull property="SEARCH_INPUT" prepend="and">
+				( RESOURCE_TYPE like '%' || #SEARCH_INPUT# || '%'
+				or RESOURCE_ID like '%' || #SEARCH_INPUT# || '%'
+				or RESOURCE_ALIAS like '%' || #SEARCH_INPUT# || '%'
+				or RESOURCE_MEMO like '%' || #SEARCH_INPUT# || '%'
+				or RESOURCE_KEY IN
+					(SELECT RESOURCE_KEY FROM INDIGO_CMM_RESOURCE_PROPERTY
+						WHERE RESOURCE_PROPERTY_VALUE like '%' || #SEARCH_INPUT# || '%')
+					)
+			</isNotNull>
+			<isNotNull property="RESOURCE_TYPE" prepend="and">
+				RESOURCE_TYPE = #RESOURCE_TYPE#
+			</isNotNull>
+			<isNotNull property="RESOURCE_KEY" prepend="and">
+				RESOURCE_KEY = #RESOURCE_KEY#
+			</isNotNull>
+		</dynamic>
+</select>
+
+<select id="selectCmmResourceProperty" resultClass="HashMap" parameterClass="HashMap">
+	SELECT * FROM INDIGO_CMM_RESOURCE_PROPERTY
+		<dynamic prepend="where">
+			<isNotNull property="RESOURCE_KEY" prepend="and">
+				RESOURCE_KEY = #RESOURCE_KEY#
+			</isNotNull>
+		</dynamic>
+</select>
+
+<select id="selectCmmResourcePropertyMap" resultClass="HashMap" parameterClass="HashMap">
+	SELECT RESOURCE_PROPERTY_NAME, RESOURCE_PROPERTY_VALUE FROM INDIGO_CMM_RESOURCE_PROPERTY
+		<dynamic prepend="where">
+			<isNotNull property="RESOURCE_KEY" prepend="and">
+				RESOURCE_KEY = #RESOURCE_KEY#
+			</isNotNull>
+		</dynamic>
+</select>
+
+<select id="selectMappingAdForCmmResource"  resultClass="string" parameterClass="map">
+	SELECT M.RESOURCE_KEY FROM INDIGO_CMM_RESOURCE_MAPPING M, INDIGO_CMM_RESOURCE R
+		WHERE M.RESOURCE_KEY = R.RESOURCE_KEY
+		<isNotNull property="RESOURCE_TYPE" prepend="and">
+				R.RESOURCE_TYPE = #RESOURCE_TYPE#
+			</isNotNull>
+			<isNotNull property="IN_ID" prepend="and">
+				M.IN_ID = #IN_ID#
+			</isNotNull>
+</select>
+
+<insert id="insertCmmResourceMapping" parameterClass="HashMap">	
+	INSERT INTO INDIGO_CMM_RESOURCE_MAPPING (RESOURCE_MAPPING_KEY, RESOURCE_KEY, IN_ID, MAPPING_DATE)
+		VALUES(#RESOURCE_MAPPING_KEY#, #RESOURCE_KEY#, #IN_ID#, TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISSFF3'))
+</insert>
+
+<select id="selectCmmResourceMapping"  resultClass="int" parameterClass="map">
+	SELECT count(RESOURCE_MAPPING_KEY) FROM INDIGO_CMM_RESOURCE_MAPPING
+	<dynamic prepend="where">
+			<isNotNull property="RESOURCE_KEY" prepend="and">
+				RESOURCE_KEY = #RESOURCE_KEY#
+			</isNotNull>
+			<isNotNull property="IN_ID" prepend="and">
+				IN_ID = #IN_ID#
+			</isNotNull>
+		</dynamic>
+</select>
+
+<insert id="insertCmmResource" parameterClass="HashMap">	
+	INSERT INTO INDIGO_CMM_RESOURCE (RESOURCE_KEY,RESOURCE_TYPE,RESOURCE_ID,RESOURCE_ALIAS,RESOURCE_MEMO, RESOURCE_USER)
+		VALUES(#RESOURCE_KEY#, #RESOURCE_TYPE#, #RESOURCE_ID#, #RESOURCE_ALIAS#, #RESOURCE_MEMO#, #RESOURCE_USER#)
+</insert>
+
+<insert id="insertCmmResourceProperty" parameterClass="HashMap">	
+	INSERT INTO INDIGO_CMM_RESOURCE_PROPERTY (RESOURCE_PROPERTY_KEY, RESOURCE_PROPERTY_NAME, RESOURCE_PROPERTY_VALUE, RESOURCE_KEY)
+			VALUES(#RESOURCE_PROPERTY_KEY#, #RESOURCE_PROPERTY_NAME#, #RESOURCE_PROPERTY_VALUE#, #RESOURCE_KEY#)
+</insert>
+
+<update id="updateCmmResource" parameterClass="HashMap">
+	UPDATE INDIGO_CMM_RESOURCE 
+		SET RESOURCE_TYPE = #RESOURCE_TYPE#, RESOURCE_ID = #RESOURCE_ID#,
+		RESOURCE_ALIAS = #RESOURCE_ALIAS#, RESOURCE_MEMO = #RESOURCE_MEMO#, RESOURCE_USER = #RESOURCE_USER#, RESOURCE_DATE = TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISSFF3')
+		WHERE RESOURCE_KEY = #RESOURCE_KEY#
+
+</update>
+
+<select id="validateResourceAlias" parameterClass="string" resultClass="HashMap">
+	SELECT *
+	FROM INDIGO_CMM_RESOURCE
+	WHERE RESOURCE_ALIAS = #resource_alias#
+</select>
+
+<update id="updateCmmResourceProperty" parameterClass="HashMap">
+	UPDATE INDIGO_CMM_RESOURCE_PROPERTY 
+		SET RESOURCE_PROPERTY_NAME = #RESOURCE_PROPERTY_NAME#, RESOURCE_PROPERTY_VALUE = #RESOURCE_PROPERTY_VALUE#
+		WHERE RESOURCE_KEY = #RESOURCE_KEY# AND RESOURCE_PROPERTY_NAME = #RESOURCE_PROPERTY_NAME#
+</update>
+
+<delete id="deleteCmmResource" parameterClass="HashMap">
+	DELETE FROM INDIGO_CMM_RESOURCE WHERE RESOURCE_KEY = #RESOURCE_KEY#
+</delete>
+
+<delete id="deleteCmmResourceProperty" parameterClass="HashMap">
+	DELETE FROM INDIGO_CMM_RESOURCE_PROPERTY WHERE RESOURCE_KEY = #RESOURCE_KEY#
+</delete>
+
+<delete id="deleteCmmResourceMapping" parameterClass="HashMap">
+	DELETE FROM INDIGO_CMM_RESOURCE_MAPPING M
+	    WHERE EXISTS(
+	     SELECT 1 FROM INDIGO_CMM_RESOURCE R
+			WHERE M.RESOURCE_KEY = R.RESOURCE_KEY
+			AND R.RESOURCE_TYPE = #RESOURCE_TYPE# AND IN_ID = #IN_ID#
+			AND R.RESOURCE_KEY = #RESOURCE_KEY#
+	        )
+</delete>
+
+<delete id="deleteAdaptorCmmMapping" parameterClass="string">
+	DELETE FROM INDIGO_CMM_RESOURCE_MAPPING
+	    WHERE IN_ID = #IN_ID#
+</delete>
+
+<select id="selectCmmResourceMappingListCount"  resultClass="int" parameterClass="map">
+	SELECT COUNT(RESOURCE_MAPPING_KEY) FROM INDIGO_CMM_RESOURCE_MAPPING
+	 <dynamic prepend="where">
+			<iterate property="RESOURCE_KEY" open="RESOURCE_KEY IN (" close = ")" conjunction=",">
+            	#RESOURCE_KEY[]#  					 
+            </iterate>
+		</dynamic>
+</select>
+
+<select id="selectMappingCmmResourceforAdCount"  resultClass="int" parameterClass="map">
+	SELECT count(M.IN_ID) FROM INDIGO_CMM_RESOURCE_MAPPING M, INDIGO_CMM_RESOURCE R
+		WHERE M.RESOURCE_KEY = R.RESOURCE_KEY
+			<isNotNull property="RESOURCE_KEY" prepend="and">
+				M.RESOURCE_KEY = #RESOURCE_KEY#
+			</isNotNull>
+			<isNotNull property="RESOURCE_TYPE" prepend="and">
+				R.RESOURCE_TYPE = #RESOURCE_TYPE#
+			</isNotNull>
+</select>
+
+<select id="selectMappingCmmResourceforAd"  resultClass="string" parameterClass="map">
+SELECT T2.IN_ID
+		FROM(SELECT ROWNUM ROW_NUM, T1.*
+		    	FROM(
+					SELECT M.IN_ID FROM INDIGO_CMM_RESOURCE_MAPPING M, INDIGO_CMM_RESOURCE R
+						WHERE M.RESOURCE_KEY = R.RESOURCE_KEY
+							<isNotNull property="RESOURCE_KEY" prepend="and">
+								M.RESOURCE_KEY = #RESOURCE_KEY#
+							</isNotNull>
+							<isNotNull property="RESOURCE_TYPE" prepend="and">
+								R.RESOURCE_TYPE = #RESOURCE_TYPE#
+							</isNotNull>
+                             	)T1
+				)T2
+		<![CDATA[
+			WHERE  ROW_NUM > #SKIP_INDEX#
+			AND  ROW_NUM <= #MAX_ROW#
+		]]>
+</select>
+
+<typeAlias alias="instance"        type="com.indigo.web.agent.vo.EaiInstanceVO"/>
+
+<select id="selectCmmResourceMappingAdaptorListCount"  resultClass="int" parameterClass="map">
+SELECT COUNT(IN_ID) FROM (
+ SELECT 
+   		(SELECT PD_ALIAS FROM esb_PRODUCT WHERE PD_ID = PD.IN_IM_ID) AS IN_IM_ALIAS,
+	    PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER, PD.IN_IM_ID,
+	    PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE,
+	    INS.IN_ID, INS.PJ_ID, INS.IN_DEPLOY_YN, PJ.PJ_NAME, INS.IN_DEPLOY_DATE
+	
+        FROM   esb_PRODUCT PD, esb_INSTANCE INS, esb_PROJECT PJ
+        WHERE  PD.PD_ID = INS.IN_ID
+        AND    INS.PJ_ID = PJ.PJ_ID
+        
+        AND    PD.PD_ID IN (
+					SELECT M.IN_ID FROM INDIGO_CMM_RESOURCE_MAPPING M, INDIGO_CMM_RESOURCE R
+						WHERE M.RESOURCE_KEY = R.RESOURCE_KEY
+							<isNotNull property="RESOURCE_KEY" prepend="and">
+								M.RESOURCE_KEY = #RESOURCE_KEY#
+							</isNotNull>
+							<isNotNull property="RESOURCE_TYPE" prepend="and">
+								R.RESOURCE_TYPE = #RESOURCE_TYPE#
+							</isNotNull>
+                             	)
+        ORDER BY PD.PD_ORDER, PD.PD_ALIAS) A
+        <dynamic prepend="where">
+			<isNotNull property="im_name" prepend="and"> 
+				in_im_alias like '%' || #im_name# || '%'
+			</isNotNull>
+			<isNotNull property="pj_name" prepend="and"> 
+				pj_name like '%' || #pj_name# || '%'
+			</isNotNull>
+			<isNotNull property="pd_name" prepend="and"> 
+				pd_alias like '%' || #pd_name# || '%'
+			</isNotNull>
+		</dynamic>
+</select>
+
+
+<select id="selectCmmResourceMappingAdaptorList"  resultClass="instance" parameterClass="map">
+SELECT T2.*
+FROM(SELECT ROWNUM ROW_NUM, T1.*
+    	FROM(
+			SELECT * FROM (
+				 SELECT 
+				   		(SELECT PD_ALIAS FROM esb_PRODUCT WHERE PD_ID = PD.IN_IM_ID) AS IN_IM_ALIAS,
+					    PD.PD_NAME, PD.PD_ALIAS, PD.PD_REG_DATE, PD.PD_REG_USER, PD.IN_IM_ID,
+					    PD.FINAL_NW_STATUS, PD.FINAL_MO_STATUS, PD.FINAL_MO_REG_DATE,
+					    INS.IN_ID, INS.PJ_ID, INS.IN_DEPLOY_YN, PJ.PJ_NAME, INS.IN_DEPLOY_DATE
+					
+				        FROM   esb_PRODUCT PD, esb_INSTANCE INS, esb_PROJECT PJ
+				        WHERE  PD.PD_ID = INS.IN_ID
+				        AND    INS.PJ_ID = PJ.PJ_ID
+				        
+				        AND    PD.PD_ID IN (
+									SELECT M.IN_ID FROM INDIGO_CMM_RESOURCE_MAPPING M, INDIGO_CMM_RESOURCE R
+										WHERE M.RESOURCE_KEY = R.RESOURCE_KEY
+											<isNotNull property="RESOURCE_KEY" prepend="and">
+												M.RESOURCE_KEY = #RESOURCE_KEY#
+											</isNotNull>
+											<isNotNull property="RESOURCE_TYPE" prepend="and">
+												R.RESOURCE_TYPE = #RESOURCE_TYPE#
+											</isNotNull>
+				                             	)
+				        ORDER BY PD.PD_ORDER, PD.PD_ALIAS) A
+			        <dynamic prepend="where">
+						<isNotNull property="im_name" prepend="and"> 
+							in_im_alias like '%' || #im_name# || '%'
+						</isNotNull>
+						<isNotNull property="pj_name" prepend="and"> 
+							pj_name like '%' || #pj_name# || '%'
+						</isNotNull>
+						<isNotNull property="pd_name" prepend="and"> 
+							pd_alias like '%' || #pd_name# || '%'
+						</isNotNull>
+					</dynamic>
+                             	)T1
+				)T2
+		<![CDATA[
+			WHERE  ROW_NUM > #SKIP_INDEX#
+			AND  ROW_NUM <= #MAX_ROW#
+		]]>
+</select>
+
+</sqlMap>
