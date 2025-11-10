@@ -13,6 +13,11 @@
         <result property="tableName" column="TABLE_NAME"/>
     </resultMap>
 
+    <resultMap id="dbToPInterfaceResult" class="dbSelectInterface">
+        <result property="interfaceId" column="INTERFACE_ID"/>
+        <result property="interfaceName" column="INTERFACE_NAME"/>
+    </resultMap>
+
     <select id="selectInterfaceList" resultMap="dbSelectInterfaceResult">
         SELECT DISTINCT T.INTERFACE_ID, I.INTERFACE_NAME, T.TABLE_NAME
         FROM INTERFACE_TABLE T
@@ -36,7 +41,7 @@
         VALUES (#interfaceId#, #tableName#)
     </insert>
 
-    <select id="selectInterfaceListByPatternDt" resultMap="dbSelectInterfaceResult">
+    <select id="selectInterfaceListByPatternDt" resultMap="dbToPInterfaceResult">
         SELECT INTERFACE_ID, INTERFACE_NAME
         FROM ATB_INTERFACE
         WHERE PATTERN_NAME LIKE '%DT%'
