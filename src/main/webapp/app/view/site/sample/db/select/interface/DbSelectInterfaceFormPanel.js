@@ -32,15 +32,15 @@ Ext.define('IndigoESBWebConsole.view.site.sample.db.select.interface.DbSelectInt
                     xtype: 'indigoCombo',
                     fieldLabel: '인터페이스 선택',
                     name: 'interfaceId',
-                    displayField: 'interfaceName', // 화면에 보이는 값
-                    valueField: 'interfaceId',     // 내부 값
-                    queryMode: 'local',            // store에 이미 로드된 데이터 사용
+                    displayField: 'interfaceName',
+                    valueField: 'interfaceId',
+                    queryMode: 'local',
                     editable: false,
                     store: Ext.create('IndigoESBWebConsole.store.DbSelectInterfaceDTPStore'),
                     listeners: {
                         select: function (combo, record) {
                             var form = combo.up('form');
-                            form.down('#tableNameField').focus(); // 선택 후 다음 필드로 이동
+                            form.down('#tableNameField').focus();
                         }
                     }
                 },

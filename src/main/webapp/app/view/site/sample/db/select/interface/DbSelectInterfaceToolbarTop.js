@@ -29,16 +29,6 @@ Ext.define('IndigoESBWebConsole.view.site.sample.db.select.interface.DbSelectInt
             text: '삭제',
             itemId: 'deleteButton',
             glyph: 'xf1f8@FontAwesome'
-        },
-        '-',
-        {
-            xtype: 'indigoSearchField',
-            fieldLabel: '검 색',
-            labelWidth: 30,
-            itemId: 'searchField',
-            name: 'search_val',
-            width: 400,
-            margin: '0 0 0 4'
         }
     ]
 });

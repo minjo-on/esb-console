@@ -56,7 +56,7 @@
 				"requiredAuth": "SUPER"
 				},
 				{
-				"text": "DbSelectCondition",
+				"text": "DB Select 조건 컬럼 설정",
 				"glyph": "fa fa-database glyphIcon",
 				"viewClass": "DbSelectConditionView",
 				"useYn": "Y",

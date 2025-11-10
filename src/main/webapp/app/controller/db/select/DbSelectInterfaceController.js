@@ -56,11 +56,7 @@ Ext.define('IndigoESBWebConsole.controller.db.select.DbSelectInterfaceController
     },
 
     onRefreshClick: function () {
-        var searchField = Ext.ComponentQuery.query('FileTransferManagerToolbarTop indigoSearchField[itemId=searchField]')[0];
         var store = Ext.ComponentQuery.query('DbSelectInterfaceGrid')[0].getStore();
-
-        searchField.setValue('');
-        store.getProxy().setExtraParam('searchKeyword', '');
         store.load();
     },
 
@@ -71,9 +67,12 @@ Ext.define('IndigoESBWebConsole.controller.db.select.DbSelectInterfaceController
         var form = win.down('form');
         form.loadRecord(record);
 
-        form.down('#interfaceIdField').setValue(record.get('interfaceId')).setReadOnly(true);
-        form.down('#interfaceNameField').setValue(record.get('interfaceName')).setReadOnly(true);
-        form.down('#tableNameField').setValue(record.get('tableName'));
+        var combo = form.down('combo[name=interfaceId]');
+        if (combo) { combo.setValue(record.get('interfaceId'));
+            combo.setReadOnly(true);
+        }
+        var tableField = form.down('#tableNameField');
+        if (tableField) { tableField.setValue(record.get('tableName')); }
 
         win.show();
     },

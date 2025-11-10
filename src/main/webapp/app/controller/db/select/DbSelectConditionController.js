@@ -71,12 +71,7 @@ Ext.define('IndigoESBWebConsole.controller.db.select.DbSelectConditionController
     },
 
     onRefreshClick: function () {
-        var searchField = Ext.ComponentQuery.query('FileTransferManagerToolbarTop indigoSearchField[itemId=conditionSearchField]')[0];
         var store = Ext.ComponentQuery.query('DbSelectConditionGrid')[0].getStore();
-
-        // 검색 필드와 프록시 파라미터를 초기화합니다.
-        searchField.setValue('');
-        store.getProxy().setExtraParam('searchKeyword', '');
         store.load();
     },
 

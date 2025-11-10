@@ -29,7 +29,16 @@ public class DbSelectInterfaceServiceImpl implements DbSelectInterfaceService {
         DbSelectInterfaceVO vo = new DbSelectInterfaceVO();
         vo.setInterfaceId(interfaceId);
         vo.setTableName(tableName);
-        dbSelectInterfaceDAO.insertDbSelectInterface(vo);
+
+        try {
+            dbSelectInterfaceDAO.insertDbSelectInterface(vo);
+        } catch (Exception e) {
+            if (e.getMessage().contains("ORA-00001")) {
+                throw new Exception("이미 등록된 인터페이스입니다.");
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Override
