@@ -55,6 +55,13 @@
 				"useYn": "Y",
 				"requiredAuth": "SUPER"
 				},
+                {
+                  "text": "TEST",
+                  "glyph": "fa fa-database glyphIcon",
+                  "viewClass": "TestPanel",
+                  "useYn": "Y",
+                  "requiredAuth": "SUPER"
+                },
 				{
 				"text": "DB Select 조건 컬럼 설정",
 				"glyph": "fa fa-database glyphIcon",
